@@ -1,0 +1,10 @@
+# backend/requirements.txt
+Flask==3.0.0
+msal==1.26.0
+requests==2.31.0
+python-dotenv==1.0.0
+gunicorn==21.2.0  # Para producción
+flask-cors==4.0.0  # Para permitir peticiones desde la app
+# mobile/requirements.txt
+flet==0.25.2
+requests==2.31.0
