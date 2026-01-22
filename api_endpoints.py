@@ -7,7 +7,7 @@ import requests
 import os
 
 # Importar configuración desde goot.py
-import goot
+import goot.py
 from goot import (
     PHONE_NUMBER_ID0, PHONE_NUMBER_ID1, PHONE_NUMBER_ID, VERIFY_TOKEN, ACCESS_TOKEN, 
     TENANT_ID, CLIENT_ID, CLIENT_SECRET, DATAVERSE_URL, ENTITY_SET, clear_screen

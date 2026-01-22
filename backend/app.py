@@ -1,3 +1,4 @@
+
 # ============ IMPORTACIONES ============
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -12,6 +13,13 @@ from goot import (
     PHONE_NUMBER_ID0, PHONE_NUMBER_ID1, PHONE_NUMBER_ID, VERIFY_TOKEN, ACCESS_TOKEN, 
     TENANT_ID, CLIENT_ID, CLIENT_SECRET, DATAVERSE_URL, ENTITY_SET, clear_screen
 )
+from api.auth import bp_auth
+from api.users import bp_users
+from api.messages import bp_messages
+from api.conversations import bp_conversations
+from api.webhook import bp_webhook
+from api.reportes import bp_reportes
+from api.settings import bp_settings
 
 # ============ INICIALIZAR FLASK ============
 app = Flask(__name__)
@@ -134,13 +142,13 @@ def send_reply(phonenumber, text, timestamp, fromname=""):
     greeting = f"👋 ¡Hola {fromname}!" if fromname else "👋 ¡Hola!"
 
     if text in ["hola", "menu", "mm"]:
-        message = f"{greeting} Opciones:\n1️⃣ Consultar \n2️⃣ Ver promociones\n3️⃣ Hablar con un asesor"
+        message = f"{greeting} Opciones:\n1️⃣ SERVICIOS \n2️⃣ COTIZACIONES \n3️⃣ Hablar con un asesor"
     elif text == "1":
-        message = "💰 Opcion 1 COP"
+        message = "SERVICIOS"
     elif text == "2":
-        message = "🎉 Opcion 2  2x1 \n- 10% en planes"
+        message = "COTIZACIONES"
     elif text == "3":
-        message = "📞 Opcion 3 Un asesor se comunicará contigo pronto."
+        message = "📞 SOLICITAR UNA LLAMADA"
     else:
         message = "❓ No entendí tu mensaje. Escribe 'menu o mm' para ver opciones."
     
@@ -161,7 +169,31 @@ def send_reply(phonenumber, text, timestamp, fromname=""):
     except Exception as e:
         print(f"❌ Excepción al enviar mensaje: {e}")
 
+
 # ============ RUTAS / ENDPOINTS ============
+
+# ============ ENDPOINT LOGIN USUARIO ============
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    correo = data.get("correo")
+    clave = data.get("clave")
+    print(f"[LOGIN] Correo recibido: {correo}")
+    print(f"[LOGIN] Clave recibida: {clave}")
+    from goot import get_user_by_email
+    user = get_user_by_email(correo)
+    print(f"[LOGIN] Usuario encontrado: {user}")
+    if user:
+        clave_db = user.get("cr321_clave")
+        print(f"[LOGIN] Clave almacenada: {clave_db}")
+        if clave_db == clave:
+            return jsonify({"success": True, "nombre": user.get("cr321_nombre"), "rol": user.get("cr321_rol"), "correo": user.get("cr321_correo")})
+        else:
+            print("[LOGIN] Clave incorrecta")
+            return jsonify({"success": False, "error": "Clave incorrecta"})
+    else:
+        print("[LOGIN] Usuario no encontrado")
+        return jsonify({"success": False, "error": "Usuario no encontrado"})
 
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
@@ -345,6 +377,15 @@ def send_manual_message():
             
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# Registrar blueprints
+app.register_blueprint(bp_auth)
+app.register_blueprint(bp_users)
+app.register_blueprint(bp_messages)
+app.register_blueprint(bp_conversations)
+app.register_blueprint(bp_webhook)
+app.register_blueprint(bp_reportes)
+app.register_blueprint(bp_settings)
 
 # ============ EJECUTAR APLICACIÓN ============
 if __name__ == "__main__":
