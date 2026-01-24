@@ -19,16 +19,16 @@ class WhatsAppAPI:
     def __init__(self, base_url, token=None):
         self.base_url = base_url
         self.token = token
-        print(f"📡 [API] Inicializado con base URL: {base_url}")
+        print(f"[API] Inicializado con base URL: {base_url}")
     
     def set_token(self, token):
         self.token = token
     
     def get_conversations(self):
-        try:api/conversations"
+        try:
+            url = f"{self.base_url}/api/conversations"
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
-            print(f"🔍 [API] GET {url}")
-            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] GET {url}")
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
@@ -39,10 +39,10 @@ class WhatsAppAPI:
             print(f"Error al obtener conversaciones: {e}")
             return []
     def get_messages(self, phone):
-        try:api/messages/{phone}"
+        try:
+            url = f"{self.base_url}/api/messages/{phone}"
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
-            print(f"📨 [API] GET {url}")
-            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] GET {url}")
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
@@ -53,10 +53,10 @@ class WhatsAppAPI:
             print(f"Error al obtener mensajes: {e}")
             return []
     def send_message(self, phone, text, group="GENERAL"):
-        try:api/send_message"
+        try:
+            url = f"{self.base_url}/api/send_message"
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
-            print(f"📤 [API] POST {url}")
-            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] POST {url}")
             response = requests.post(url, json={"phone": phone, "message": text, "group": group}, headers=headers, timeout=10)
             print(f"[DEBUG] Enviando mensaje a {phone} [Grupo: {group}]: {response.status_code}")
             if response.status_code == 200:
@@ -76,12 +76,12 @@ def format_timestamp(ts):
     except Exception:
         return ts
 
-def logiurl = f"{API_BASE_URL}/api/login"
+def login_api(correo, clave):
+    try:
+        url = f"{API_BASE_URL}/api/login"
         print(f"[FRONTEND DEBUG] POST {url}")
         print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}', Clave: '{clave}'")
-        response = requests.post(url
-        print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}', Clave: '{clave}'")
-        response = requests.post("http://localhost:5000/login", json={"correo": correo, "clave": clave})
+        response = requests.post(url, json={"correo": correo, "clave": clave})
         print(f"[FRONTEND DEBUG] Status code: {response.status_code}")
         print(f"[FRONTEND DEBUG] Response: {response.text}")
         if response.status_code == 200:
@@ -91,12 +91,11 @@ def logiurl = f"{API_BASE_URL}/api/login"
     except Exception as e:
         print("Error de conexión:", e)
         return None
-url = f"{API_BASE_URL}/register"
-        print(f"[FRONTEND DEBUG] POST {url}")
-        response = requests.post(url
 def register_api(nombre, correo, clave, rol):
     try:
-        response = requests.post("http://localhost:5000/register", json={
+        url = f"{API_BASE_URL}/register"
+        print(f"[FRONTEND DEBUG] POST {url}")
+        response = requests.post(url, json={
             "nombre": nombre,
             "correo": correo,
             "clave": clave,
@@ -105,13 +104,13 @@ def register_api(nombre, correo, clave, rol):
         return response.status_code == 200 and response.json().get("success")
     except Exception as e:
         print("Error de conexión:", e)
-        url = f"{API_BASE_URL}/api/users"
-        print(f"[FRONTEND DEBUG] GET {url}")
-        response = requests.get(url
+        return False
 
 def get_users_api(token):
     try:
-        response = requests.get("http://localhost:5000/api/users", 
+        url = f"{API_BASE_URL}/api/users"
+        print(f"[FRONTEND DEBUG] GET {url}")
+        response = requests.get(url, 
                                 headers={"Authorization": f"Bearer {token}"},
                                 timeout=10)
         if response.status_code == 200:

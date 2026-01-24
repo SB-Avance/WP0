@@ -117,4 +117,25 @@ Responde automáticamente a:
 - Flet (UI)
 - Microsoft MSAL
 - Requests
-- Microsoft Graph API 
+- Microsoft Graph API
+
+## 🔄 Sincronización con GitHub
+
+### Opción 1: Script automático con mensaje personalizado
+```powershell
+.\sync.ps1 "Descripción de tus cambios"
+```
+
+### Opción 2: Script rápido (genera mensaje automático)
+```powershell
+.\quick-sync.ps1
+```
+
+### Opción 3: Manual (3 comandos)
+```powershell
+git add -A
+git commit -m "Tu mensaje"
+git push origin main
+```
+
+**📖 Guía detallada:** Ver [COMO_SINCRONIZAR_GIT.md](COMO_SINCRONIZAR_GIT.md) 
