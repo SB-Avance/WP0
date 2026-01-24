@@ -73,5 +73,8 @@ jobs:
         with:
           app-name: 'whatsapp-flask-app'
           slot-name: 'Production'
-          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 back:app'
+      
+      - name: 'Configure startup command'
+        run: |
+          az webapp config set --resource-group GR-whatsapp-flask-app --name whatsapp-flask-app --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 back:app"
           
