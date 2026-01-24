@@ -80,8 +80,8 @@ def login_api(correo, clave):
     try:
         url = f"{API_BASE_URL}/api/login"
         print(f"[FRONTEND DEBUG] POST {url}")
-        print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}', Clave: '{clave}'")
-        response = requests.post(url, json={"correo": correo, "clave": clave}, timeout=10)
+        print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}' Clave: '{clave}'")
+        response = requests.post(url, json={"correo": correo, "clave": clave}, timeout=30)
         print(f"[FRONTEND DEBUG] Status code: {response.status_code}")
         print(f"[FRONTEND DEBUG] Response: {response.text}")
         if response.status_code == 200:
