@@ -52,9 +52,6 @@ def SidebarView(on_nav, on_logout=None, user_name=None):
             width=60,  # Ancho fijo para móvil
             bgcolor=ft.colors.SURFACE_VARIANT
         )
-            ], spacing=0),
-            expand=True
-        )
     elif user_info:
         return ft.Container(
             ft.Column([
