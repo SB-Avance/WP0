@@ -125,11 +125,15 @@ def get_users_api(token):
 
 def main(page: ft.Page):
     page.bgcolor = styles.BACKGROUND_COLOR
-    page.window.min_width = 375
-    page.window.min_height = 667
-    page.window.width = 375
-    page.window.height = 812  # iPhone X/11/12 size
     page.title = "WhatsApp CRM/ERP"
+    
+    # Configurar tamaño de ventana para móvil (iPhone X)
+    page.window_width = 375
+    page.window_height = 812
+    page.window_min_width = 375
+    page.window_min_height = 667
+    page.window_max_width = 375
+    page.window_max_height = 812
 
     api = WhatsAppAPI(API_BASE_URL)
     user = {"nombre": None, "rol": None, "correo": None, "token": None}
