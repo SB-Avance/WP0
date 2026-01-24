@@ -81,16 +81,26 @@ def login_api(correo, clave):
         url = f"{API_BASE_URL}/api/login"
         print(f"[FRONTEND DEBUG] POST {url}")
         print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}', Clave: '{clave}'")
-        response = requests.post(url, json={"correo": correo, "clave": clave})
+        response = requests.post(url, json={"correo": correo, "clave": clave}, timeout=10)
         print(f"[FRONTEND DEBUG] Status code: {response.status_code}")
         print(f"[FRONTEND DEBUG] Response: {response.text}")
         if response.status_code == 200:
-            return response.json()
+            return {"success": True, "data": response.json()}
+        elif response.status_code == 503:
+            return {"success": False, "error": "service_unavailable", "message": "El servidor no está disponible. Por favor, intente más tarde."}
+        elif response.status_code in [401, 403]:
+            return {"success": False, "error": "invalid_credentials", "message": "Credenciales incorrectas"}
         else:
-            return None
-    except Exception as e:
+            return {"success": False, "error": "unknown", "message": f"Error del servidor ({response.status_code})"}
+    except requests.exceptions.Timeout:
+        print("Error: Timeout al conectar con el servidor")
+        return {"success": False, "error": "timeout", "message": "Tiempo de espera agotado. Verifique su conexión."}
+    except requests.exceptions.ConnectionError as e:
         print("Error de conexión:", e)
-        return None
+        return {"success": False, "error": "connection", "message": "No se puede conectar con el servidor. Verifique su conexión."}
+    except Exception as e:
+        print("Error inesperado:", e)
+        return {"success": False, "error": "unknown", "message": "Error inesperado al conectar"}
 def register_api(nombre, correo, clave, rol):
     try:
         url = f"{API_BASE_URL}/register"
@@ -128,12 +138,12 @@ def main(page: ft.Page):
     page.title = "WhatsApp CRM/ERP"
     
     # Configurar tamaño de ventana para móvil (iPhone X)
-    page.window_width = 375
-    page.window_height = 812
-    page.window_min_width = 375
-    page.window_min_height = 667
-    page.window_max_width = 375
-    page.window_max_height = 812
+    page.window.width = 375
+    page.window.height = 812
+    page.window.min_width = 375
+    page.window.min_height = 667
+    page.window.max_width = 375
+    page.window.max_height = 812
 
     api = WhatsAppAPI(API_BASE_URL)
     user = {"nombre": None, "rol": None, "correo": None, "token": None}
@@ -152,9 +162,10 @@ def main(page: ft.Page):
         correo = correo_input.value
         clave = clave_input.value
         result = login_api(correo, clave)
-        if result and 'token' in result:
-            user_data = result.get('user', {})
-            token = result.get('token')
+        if result and result.get('success') and 'data' in result:
+            data = result['data']
+            user_data = data.get('user', {})
+            token = data.get('token')
             user.update({
                 'nombre': user_data.get('nombre'),
                 'correo': user_data.get('correo'),
@@ -165,7 +176,10 @@ def main(page: ft.Page):
             current_view["value"] = "dashboard"
             render()
         else:
-            snack = ft.SnackBar(ft.Text("Credenciales incorrectas"), bgcolor=ft.Colors.RED)
+            # Mostrar mensaje de error específico
+            error_msg = result.get('message', 'Error desconocido') if result else 'Error de conexión'
+            error_color = ft.Colors.ORANGE if result and result.get('error') == 'service_unavailable' else ft.Colors.RED
+            snack = ft.SnackBar(ft.Text(error_msg), bgcolor=error_color)
             page.overlay.append(snack)
             snack.open = True
             page.update()
