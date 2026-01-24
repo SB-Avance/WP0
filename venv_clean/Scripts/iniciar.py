@@ -7,7 +7,7 @@ def iniciar_whatsapp_manager():
     # 1. Iniciar el Backend en una nueva ventana de CMD
     # El comando 'start' abre la ventana, 'cmd /k' la mantiene abierta tras ejecutar
     subprocess.Popen(
-        'start cmd /k "cd C:\\VS\\CLAUDE-1\\backend && python app.py"', 
+        'start cmd /k "cd C:\\VS\\CLAUDE-1\\backend && python back.py"', 
         shell=True
     )
 

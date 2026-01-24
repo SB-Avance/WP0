@@ -14,7 +14,7 @@ Sistema de gestión de conversaciones de WhatsApp Business integrado con Microso
 ```
 CLAUDE-1/
 ├── backend/           # Servidor Flask principal
-│   ├── app.py        # Servidor principal con webhook y API REST
+│   ├── back.py       # Servidor principal con webhook y API REST
 │   ├── config.py     # Configuración global
 │   ├── goot.py       # Variables de entorno y funciones auxiliares
 │   └── api/          # Módulos API organizados por funcionalidad
@@ -47,7 +47,7 @@ CLAUDE-1/
 ```powershell
 # Terminal 1 - Backend
 cd backend
-python app.py
+python back.py
 
 # Terminal 2 - Frontend (nueva ventana)
 cd mobile

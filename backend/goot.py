@@ -42,7 +42,7 @@ Z_ZPRUEBA:          {Z_ZPRUEBA}
     """
 
 def get_token():
-    from app import get_token as get_token_app
+    from back import get_token as get_token_app
     return get_token_app()
 
 def get_user_by_email(email):
