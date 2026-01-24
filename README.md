@@ -38,44 +38,50 @@ CLAUDE-1/
 
 ## 🚀 Inicio Rápido
 
-### Opción 1: Script automático (PowerShell)
+### ✅ Uso normal (recomendado)
+El backend YA está corriendo en Azure App Services 24/7. Solo necesitas iniciar el frontend:
+
 ```powershell
 .\iniciar.ps1
 ```
 
-### Opción 2: Manual
+O manualmente:
 ```powershell
-# Terminal 1 - Backend
-cd backend
-python back.py
-
-# Terminal 2 - Frontend (nueva ventana)
+$env:ENVIRONMENT = "AZURE"
 cd mobile
 python main.py
 ```
 
-## 🌐 Configuración de Entorno (LOCAL vs AZURE)
-
-La aplicación móvil puede conectarse a diferentes backends:
-
-### Cambiar entre entornos:
+### 🛠️ Desarrollo local (solo si necesitas probar cambios en el backend)
 ```powershell
-# Usar backend LOCAL (por defecto)
-.\cambiar_entorno.ps1 LOCAL
+# Terminal 1 - Backend LOCAL (opcional)
+cd backend
+python back.py
 
-# Usar backend en AZURE
-.\cambiar_entorno.ps1 AZURE
-
-# Usar backend en PRODUCTION (requiere configurar PRODUCTION_URL)
-.\cambiar_entorno.ps1 PRODUCTION
+# Terminal 2 - Frontend
+$env:ENVIRONMENT = "LOCAL"
+cd mobile
+python main.py
 ```
 
-**Entornos disponibles**:
-- **LOCAL**: `http://localhost:5000` (desarrollo)
-- **AZURE**: `https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net`
-- **PRODUCTION**: Configurar variable `PRODUCTION_URL`
+## 🌐 Configuración de Entorno
 
-> **Nota**: Después de cambiar el entorno, reinicia la aplicación móvil.
+### Arquitectura de Despliegue
+- **Backend**: Azure App Services (producción 24/7)
+  - URL: `https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net`
+  - Despliegue automático desde GitHub
+- **Frontend**: Aplicación local (web browser en `http://localhost:8501`)
+
+### Cambiar entre entornos (solo para desarrollo):
+```powershell
+# Conectar a backend en AZURE (por defecto)
+.\cambiar_entorno.ps1 AZURE
+
+# Conectar a backend LOCAL (desarrollo)
+.\cambiar_entorno.ps1 LOCAL
+```
+
+> **Nota**: En uso normal, siempre usarás AZURE. Solo cambias a LOCAL si estás desarrollando/probando cambios en el backend.
 
 ## 🔑 Configuración
 
