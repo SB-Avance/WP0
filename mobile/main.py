@@ -1,6 +1,3 @@
-
-
-
 import flet as ft
 from components.login import LoginView
 from components.dashboard import DashboardView
@@ -12,20 +9,25 @@ from components.settings import SettingsView
 from assets import styles
 import requests
 from datetime import datetime
+from config import API_BASE_URL
 
-API_BASE_URL = "https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net/api"
+# API_BASE_URL se carga automáticamente desde config.py
+# Para cambiar entre LOCAL/AZURE, editar variable ENVIRONMENT en config.py
+# o establecer variable de entorno: set ENVIRONMENT=AZURE
 
 class WhatsAppAPI:
     def __init__(self, base_url, token=None):
         self.base_url = base_url
         self.token = token
+        print(f"📡 [API] Inicializado con base URL: {base_url}")
     
     def set_token(self, token):
         self.token = token
     
     def get_conversations(self):
-        try:
-            url = f"{self.base_url}/conversations"
+        try:api/conversations"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"🔍 [API] GET {url}")
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
@@ -37,8 +39,9 @@ class WhatsAppAPI:
             print(f"Error al obtener conversaciones: {e}")
             return []
     def get_messages(self, phone):
-        try:
-            url = f"{self.base_url}/messages/{phone}"
+        try:api/messages/{phone}"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"📨 [API] GET {url}")
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
@@ -50,8 +53,9 @@ class WhatsAppAPI:
             print(f"Error al obtener mensajes: {e}")
             return []
     def send_message(self, phone, text, group="GENERAL"):
-        try:
-            url = f"{self.base_url}/send_message"
+        try:api/send_message"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"📤 [API] POST {url}")
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
             response = requests.post(url, json={"phone": phone, "message": text, "group": group}, headers=headers, timeout=10)
             print(f"[DEBUG] Enviando mensaje a {phone} [Grupo: {group}]: {response.status_code}")
@@ -72,10 +76,12 @@ def format_timestamp(ts):
     except Exception:
         return ts
 
-def login_api(correo, clave):
-    try:
+def logiurl = f"{API_BASE_URL}/api/login"
+        print(f"[FRONTEND DEBUG] POST {url}")
         print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}', Clave: '{clave}'")
-        response = requests.post("https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net/api/login", json={"correo": correo, "clave": clave})
+        response = requests.post(url
+        print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}', Clave: '{clave}'")
+        response = requests.post("http://localhost:5000/login", json={"correo": correo, "clave": clave})
         print(f"[FRONTEND DEBUG] Status code: {response.status_code}")
         print(f"[FRONTEND DEBUG] Response: {response.text}")
         if response.status_code == 200:
@@ -85,10 +91,12 @@ def login_api(correo, clave):
     except Exception as e:
         print("Error de conexión:", e)
         return None
-
+url = f"{API_BASE_URL}/register"
+        print(f"[FRONTEND DEBUG] POST {url}")
+        response = requests.post(url
 def register_api(nombre, correo, clave, rol):
     try:
-        response = requests.post("https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net/api/register", json={
+        response = requests.post("http://localhost:5000/register", json={
             "nombre": nombre,
             "correo": correo,
             "clave": clave,
@@ -97,11 +105,13 @@ def register_api(nombre, correo, clave, rol):
         return response.status_code == 200 and response.json().get("success")
     except Exception as e:
         print("Error de conexión:", e)
-        return False
+        url = f"{API_BASE_URL}/api/users"
+        print(f"[FRONTEND DEBUG] GET {url}")
+        response = requests.get(url
 
 def get_users_api(token):
     try:
-        response = requests.get("https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net/api/users", 
+        response = requests.get("http://localhost:5000/api/users", 
                                 headers={"Authorization": f"Bearer {token}"},
                                 timeout=10)
         if response.status_code == 200:

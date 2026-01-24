@@ -1,4 +1,3 @@
-
 # ============ IMPORTACIONES ============
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -148,7 +147,7 @@ def send_reply(phonenumber, text, timestamp, fromname=""):
     greeting = f"👋 ¡Hola {fromname}!" if fromname else "👋 ¡Hola!"
 
     if text in ["hola", "menu", "mm"]:
-        message = f"{greeting} Opciones:\n1️⃣ SERVICIOS \n2️⃣ COTIZACIONES \n3️⃣ Hablar con un asesor"
+        message = f"{greeting} Opciones:\n1️⃣ SERVICIOS A \n2️⃣ COTIZACIONES B \n3️⃣ Hablar con un asesor"
     elif text == "1":
         message = "SERVICIOS"
     elif text == "2":
@@ -184,8 +183,7 @@ def login():
     data = request.get_json()
     correo = data.get("correo")
     clave = data.get("clave")
-    print(f"[LOGIN] Correo recibido: {correo}")
-    print(f"[LOGIN] Clave recibida: {clave}")
+    print(f"[LOGIN] Correo recibido: {correo} Clave recibida: {clave}")
     from goot import get_user_by_email
     user = get_user_by_email(correo)
     print(f"[LOGIN] Usuario encontrado: {user}")

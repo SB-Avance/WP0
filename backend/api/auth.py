@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash
 import jwt
 import datetime
 from functools import wraps
-from goot import get_user_by_email
+from goot import get_user_by_email, create_user
 from config import SECRET_KEY
 
 bp_auth = Blueprint('auth', __name__)
@@ -53,3 +53,30 @@ def login():
     else:
         print("[LOGIN] Usuario no encontrado")
         return jsonify({'message': 'Credenciales incorrectas'}), 401
+
+@bp_auth.route('/register', methods=['POST'])
+def register():
+    """Registro público de usuarios (sin autenticación)"""
+    data = request.get_json()
+    nombre = data.get('nombre')
+    correo = data.get('correo')
+    clave = data.get('clave')
+    rol = data.get('rol', 'Usuario')  # Por defecto, rol 'Usuario'
+    
+    print(f"[REGISTER] Intentando registrar: {nombre}, {correo}, rol: {rol}")
+    
+    # Verificar si el usuario ya existe
+    existing_user = get_user_by_email(correo)
+    if existing_user:
+        print(f"[REGISTER] Usuario ya existe: {correo}")
+        return jsonify({'success': False, 'message': 'El correo ya está registrado'}), 400
+    
+    # Crear usuario
+    user_id = create_user(nombre, correo, rol, clave)
+    
+    if user_id:
+        print(f"[REGISTER] Usuario creado exitosamente: {user_id}")
+        return jsonify({'success': True, 'message': 'Usuario registrado exitosamente', 'id': user_id}), 201
+    else:
+        print(f"[REGISTER] Error al crear usuario")
+        return jsonify({'success': False, 'message': 'Error al registrar usuario'}), 500
