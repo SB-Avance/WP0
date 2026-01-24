@@ -33,12 +33,13 @@ def login():
     correo = data.get('correo')
     clave = data.get('clave')
     print(f"[LOGIN] Correo recibido: {correo}")
-    print(f"[LOGIN] Clave recibida: {clave}")
+    print(f"[LOGIN] Clave recibida: '{clave}' (type: {type(clave)})")
     user = get_user_by_email(correo)
     print(f"[LOGIN] Usuario encontrado: {user}")
     if user:
         clave_db = user.get('cr321_clave')
-        print(f"[LOGIN] Clave almacenada: {clave_db}")
+        print(f"[LOGIN] Clave almacenada: '{clave_db}' (type: {type(clave_db)})")
+        print(f"[LOGIN] Comparando: recibida='{clave}' vs almacenada='{clave_db}' -> {clave == clave_db}")
         if clave_db == clave:
             token = jwt.encode({
                 'correo': correo,

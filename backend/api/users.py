@@ -2,7 +2,7 @@
 CRUD de usuarios (solo admin puede crear, editar, eliminar)
 """
 from flask import Blueprint, request, jsonify
-from goot import get_user_by_email, create_user, print_all_users
+from goot import get_user_by_email, create_user, print_all_users, get_all_users
 from api.auth import token_required
 
 bp_users = Blueprint('users', __name__)
@@ -13,10 +13,15 @@ def list_users(current_user):
     # Solo admin puede ver todos los usuarios
     if str(current_user.get('cr321_rol', '')).lower() != 'administrador':
         return jsonify({'message': 'No autorizado'}), 403
-    # Aquí deberías usar una función que devuelva todos los usuarios
-    # Por ahora, solo imprime en consola
-    print_all_users()
-    return jsonify({'message': 'Función listar usuarios implementa aquí'}), 200
+    users = get_all_users()
+    # Mapear campos relevantes
+    users_list = [{
+        'id': u.get('cr321_usuariosid'),
+        'nombre': u.get('cr321_nombre'),
+        'correo': u.get('cr321_correo'),
+        'rol': u.get('cr321_rol')
+    } for u in users]
+    return jsonify({'users': users_list}), 200
 
 @bp_users.route('/api/users', methods=['POST'])
 @token_required

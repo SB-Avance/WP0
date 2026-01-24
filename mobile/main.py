@@ -13,15 +13,21 @@ from assets import styles
 import requests
 from datetime import datetime
 
-API_BASE_URL = "https://whatsapp-flask-app-f4gsb7dhhybcg6f6.scm.eastus-01.azurewebsites.net/api"
+API_BASE_URL = "https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net/api"
 
 class WhatsAppAPI:
-    def __init__(self, base_url):
+    def __init__(self, base_url, token=None):
         self.base_url = base_url
+        self.token = token
+    
+    def set_token(self, token):
+        self.token = token
+    
     def get_conversations(self):
         try:
             url = f"{self.base_url}/conversations"
-            response = requests.get(url, timeout=10)
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("conversations", [])
@@ -33,7 +39,8 @@ class WhatsAppAPI:
     def get_messages(self, phone):
         try:
             url = f"{self.base_url}/messages/{phone}"
-            response = requests.get(url, timeout=10)
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("messages", [])
@@ -42,11 +49,18 @@ class WhatsAppAPI:
         except Exception as e:
             print(f"Error al obtener mensajes: {e}")
             return []
-    def send_message(self, phone, text):
+    def send_message(self, phone, text, group="GENERAL"):
         try:
-            url = f"{self.base_url}/messages/{phone}"
-            response = requests.post(url, json={"body": text}, timeout=10)
-            return response.status_code == 200
+            url = f"{self.base_url}/send_message"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            response = requests.post(url, json={"phone": phone, "message": text, "group": group}, headers=headers, timeout=10)
+            print(f"[DEBUG] Enviando mensaje a {phone} [Grupo: {group}]: {response.status_code}")
+            if response.status_code == 200:
+                print(f"[DEBUG] Mensaje enviado exitosamente")
+                return True
+            else:
+                print(f"[DEBUG] Error al enviar: {response.text}")
+                return False
         except Exception as e:
             print(f"Error al enviar mensaje: {e}")
             return False
@@ -60,8 +74,11 @@ def format_timestamp(ts):
 
 def login_api(correo, clave):
     try:
-        response = requests.post("https://whatsapp-flask-app-f4gsb7dhhybcg6f6.scm.eastus-01.azurewebsites.net/login", json={"correo": correo, "clave": clave})
-        if response.status_code == 200 and response.json().get("success"):
+        print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}', Clave: '{clave}'")
+        response = requests.post("https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net/api/login", json={"correo": correo, "clave": clave})
+        print(f"[FRONTEND DEBUG] Status code: {response.status_code}")
+        print(f"[FRONTEND DEBUG] Response: {response.text}")
+        if response.status_code == 200:
             return response.json()
         else:
             return None
@@ -71,7 +88,7 @@ def login_api(correo, clave):
 
 def register_api(nombre, correo, clave, rol):
     try:
-        response = requests.post("https://whatsapp-flask-app-f4gsb7dhhybcg6f6.scm.eastus-01.azurewebsites.net/register", json={
+        response = requests.post("https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net/api/register", json={
             "nombre": nombre,
             "correo": correo,
             "clave": clave,
@@ -81,6 +98,20 @@ def register_api(nombre, correo, clave, rol):
     except Exception as e:
         print("Error de conexión:", e)
         return False
+
+def get_users_api(token):
+    try:
+        response = requests.get("https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net/api/users", 
+                                headers={"Authorization": f"Bearer {token}"},
+                                timeout=10)
+        if response.status_code == 200:
+            return response.json().get("users", [])
+        else:
+            print(f"Error al obtener usuarios: {response.status_code}")
+            return []
+    except Exception as e:
+        print(f"Error al obtener usuarios: {e}")
+        return []
 
 
 def main(page: ft.Page):
@@ -92,12 +123,13 @@ def main(page: ft.Page):
     page.title = "WhatsApp CRM/ERP"
 
     api = WhatsAppAPI(API_BASE_URL)
-    user = {"nombre": None, "rol": None, "correo": None}
+    user = {"nombre": None, "rol": None, "correo": None, "token": None}
     current_view = {"value": "login"}  # login, dashboard, chats, users, settings, chat_detail
     conversations = []
     users_list = []
     selected_conversation = {"value": None}
     chat_messages = []
+    current_group = {"value": "GENERAL"}  # Grupo por defecto
 
     # Campos de entrada para login
     correo_input = ft.TextField(label="Correo")
@@ -106,13 +138,21 @@ def main(page: ft.Page):
     def on_login(e=None):
         correo = correo_input.value
         clave = clave_input.value
-        u = login_api(correo, clave)
-        if u:
-            user.update(u)
+        result = login_api(correo, clave)
+        if result and 'token' in result:
+            user_data = result.get('user', {})
+            token = result.get('token')
+            user.update({
+                'nombre': user_data.get('nombre'),
+                'correo': user_data.get('correo'),
+                'rol': user_data.get('rol'),
+                'token': token
+            })
+            api.set_token(token)
             current_view["value"] = "dashboard"
             render()
         else:
-            snack = ft.SnackBar(ft.Text("Credenciales incorrectas"), bgcolor=ft.colors.RED)
+            snack = ft.SnackBar(ft.Text("Credenciales incorrectas"), bgcolor=ft.Colors.RED)
             page.overlay.append(snack)
             snack.open = True
             page.update()
@@ -127,6 +167,34 @@ def main(page: ft.Page):
             current_view["value"] = "settings"
         render()
 
+    def on_logout(e=None):
+        # Limpiar datos del usuario
+        user.update({
+            'nombre': None,
+            'correo': None,
+            'rol': None,
+            'token': None
+        })
+        api.set_token(None)
+        current_view["value"] = "login"
+        # Limpiar campos de entrada
+        correo_input.value = ""
+        clave_input.value = ""
+        render()
+
+    def on_group_change(e):
+        current_group["value"] = e.control.value
+        print(f"[GRUPO] Grupo cambiado a: {current_group['value']}")
+        # Mostrar notificación
+        snack = ft.SnackBar(ft.Text(f"Grupo cambiado a: {current_group['value']}"), bgcolor=ft.Colors.BLUE)
+        page.overlay.append(snack)
+        snack.open = True
+        page.update()
+
+    def back_to_dashboard(e=None):
+        current_view["value"] = "dashboard"
+        render()
+
     def open_chat(conv):
         selected_conversation["value"] = conv
         # Obtener mensajes del chat seleccionado
@@ -139,11 +207,33 @@ def main(page: ft.Page):
     def send_message_to_chat(text):
         conv = selected_conversation["value"]
         phone = conv.get("phone")
-        api.send_message(phone, text)
-        # Recargar mensajes después de enviar
-        nonlocal chat_messages
-        chat_messages = api.get_messages(phone)
-        render()
+        group = current_group["value"]
+        success = api.send_message(phone, text, group)
+        
+        if success:
+            # Recargar mensajes después de enviar
+            nonlocal chat_messages
+            chat_messages = api.get_messages(phone)
+            render()
+            # Mostrar confirmación
+            snack = ft.SnackBar(ft.Text(f"Mensaje enviado [Grupo: {group}]"), bgcolor=ft.Colors.GREEN)
+            page.overlay.append(snack)
+            snack.open = True
+            page.update()
+        else:
+            # Mostrar error
+            snack = ft.SnackBar(ft.Text("Error al enviar mensaje"), bgcolor=ft.Colors.RED)
+            page.overlay.append(snack)
+            snack.open = True
+            page.update()
+
+    def refresh_chat_messages(e=None):
+        conv = selected_conversation["value"]
+        if conv:
+            phone = conv.get("phone")
+            nonlocal chat_messages
+            chat_messages = api.get_messages(phone)
+            render()
 
     def back_to_chats(e=None):
         current_view["value"] = "chats"
@@ -155,23 +245,24 @@ def main(page: ft.Page):
             page.add(LoginView(correo_input, clave_input, on_login))
         elif current_view["value"] == "chat_detail":
             conv = selected_conversation["value"]
-            page.add(ChatDetailView(conv, chat_messages, back_to_chats, send_message_to_chat))
+            page.add(ChatDetailView(conv, chat_messages, back_to_chats, send_message_to_chat, refresh_chat_messages, current_group["value"]))
         else:
             # Layout responsivo: sidebar a la izquierda en escritorio, arriba en móvil
             is_mobile = page.width < styles.RESPONSIVE_BREAKPOINT
-            sidebar = SidebarView(on_nav_change)
+            sidebar = SidebarView(on_nav_change, on_logout, user.get('nombre'))
             content = None
             if current_view["value"] == "dashboard":
-                content = DashboardView()
+                content = DashboardView(None, on_group_change, current_group["value"])
             elif current_view["value"] == "chats":
                 conversations = api.get_conversations()
                 content = ChatsView(conversations, open_chat)
             elif current_view["value"] == "users":
-                # Aquí deberías obtener la lista de usuarios real
-                users_list = [{"correo": "demo@demo.com"}]
-                content = UsersView(users_list)
+                # Obtener lista de usuarios real del backend
+                nonlocal users_list
+                users_list = get_users_api(user.get('token', ''))
+                content = UsersView(users_list, back_to_dashboard)
             elif current_view["value"] == "settings":
-                content = SettingsView()
+                content = SettingsView(back_to_dashboard)
             if is_mobile:
                 page.add(sidebar)
                 page.add(content)

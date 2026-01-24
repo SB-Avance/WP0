@@ -155,30 +155,44 @@ def get_user_by_id(user_id):
         print(f"Error al obtener usuario por ID: {e}")
         return None
 
-def print_all_users():
+def get_all_users():
+    """Obtiene todos los usuarios de Dataverse"""
     token = get_token()
     if not token:
         print("No se pudo obtener token de acceso.")
-        return
+        return []
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuarioses"
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/json"
     }
-    print("[DEBUG] URL print_all_users:", url)
-    print("[DEBUG] Token (primeros 20):", token[:20])
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = response.json()
             users = data.get("value", [])
-            print(f"Usuarios encontrados: {len(users)}")
+            # Mapear roles numéricos a strings
             for user in users:
-                print(user)
+                rol_val = user.get('cr321_rol')
+                if isinstance(rol_val, int):
+                    if rol_val == 462410001:
+                        user['cr321_rol'] = 'administrador'
+                    elif rol_val == 462410000:
+                        user['cr321_rol'] = 'usuario'
+            return users
         else:
             print(f"Error Dataverse: {response.status_code} - {response.text}")
+        return []
     except Exception as e:
         print(f"Error al consultar todos los usuarios: {e}")
+        return []
+
+def print_all_users():
+    """Imprime todos los usuarios en consola"""
+    users = get_all_users()
+    print(f"Usuarios encontrados: {len(users)}")
+    for user in users:
+        print(user)
 
 def get_messages_by_phone(phone):
     token = get_token()
@@ -220,12 +234,22 @@ def delete_message_by_id(msg_id):
         return False
 
 def get_conversations_for_user(user):
+    """Obtiene las conversaciones. Admin ve todas, usuarios ven sus conversaciones asignadas"""
     token = get_token()
     if not token:
         print("No se pudo obtener token de acceso.")
         return []
-    correo = user.get("cr321_correo")
-    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$filter=cr321_correo eq '{correo}'&$orderby=cr321_timestamp desc"
+    
+    rol = user.get("cr321_rol", "").lower()
+    
+    # Si es administrador, obtener todas las conversaciones
+    if rol == 'administrador':
+        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$orderby=cr321_timestamp desc"
+    else:
+        # Usuarios normales solo ven sus conversaciones
+        correo = user.get("cr321_correo")
+        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$filter=cr321_correo eq '{correo}'&$orderby=cr321_timestamp desc"
+    
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/json"
@@ -244,6 +268,7 @@ def get_conversations_for_user(user):
                         "name": record.get("cr321_fromname", "Desconocido"),
                         "last_message": record.get("cr321_body", ""),
                         "timestamp": record.get("cr321_timestamp"),
+                        "grupo": record.get("cr321_grupo", "Sin grupo"),
                         "unread": 0
                     }
             return list(conversations.values())

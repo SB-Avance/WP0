@@ -7,6 +7,7 @@ def ChatsView(conversations, on_select):
         phone = conv.get("phone", "")
         last_message = conv.get("last_message", "")
         timestamp = conv.get("timestamp", "")
+        grupo = conv.get("grupo", "Sin grupo")
         avatar_letter = name[0].upper() if name else "?"
         return ft.Container(
             content=ft.Row([
@@ -14,7 +15,12 @@ def ChatsView(conversations, on_select):
                 ft.Column([
                     ft.Text(name, weight=ft.FontWeight.BOLD, size=16),
                     ft.Text(last_message, size=13, color=ft.colors.GREY_700, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                ], alignment=ft.MainAxisAlignment.CENTER, spacing=2),
+                    ft.Row([
+                        ft.Icon(ft.icons.GROUP, size=12, color=ft.colors.BLUE_400),
+                        ft.Text("Grupo:", size=11, color=ft.colors.GREY_600),
+                        ft.Text(grupo, size=11, color=ft.colors.BLUE_600, weight=ft.FontWeight.W_500),
+                    ], spacing=4),
+                ], alignment=ft.MainAxisAlignment.CENTER, spacing=2, expand=True),
                 ft.Column([
                     ft.Text(timestamp[:16].replace("T", " "), size=11, color=ft.colors.GREY_500),
                     ft.Text(phone, size=11, color=ft.colors.GREY_500),

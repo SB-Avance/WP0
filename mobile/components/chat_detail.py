@@ -1,7 +1,7 @@
 # ChatDetailView: muestra los mensajes de una conversación y permite responder
 import flet as ft
 
-def ChatDetailView(conversation, messages, on_back, on_send):
+def ChatDetailView(conversation, messages, on_back, on_send, on_refresh=None, current_group=None):
     name = conversation.get("name", "Desconocido")
     phone = conversation.get("phone", "")
     # Campo de entrada para el mensaje
@@ -11,11 +11,20 @@ def ChatDetailView(conversation, messages, on_back, on_send):
             on_send(message_input.value)
             message_input.value = ""
             message_input.update()
-    return ft.Column([
-        ft.Row([
-            ft.IconButton(ft.icons.ARROW_BACK, on_click=on_back),
+    
+    # Crear header con botón de refrescar
+    header_items = [
+        ft.IconButton(ft.icons.ARROW_BACK, on_click=on_back),
+        ft.Column([
             ft.Text(f"{name} ({phone})", weight=ft.FontWeight.BOLD, size=18),
-        ], alignment=ft.MainAxisAlignment.START),
+            ft.Text(f"Grupo: {current_group}", size=12, color=ft.colors.BLUE) if current_group else None
+        ], spacing=0, expand=True),
+    ]
+    if on_refresh:
+        header_items.append(ft.IconButton(ft.icons.REFRESH, on_click=on_refresh, tooltip="Actualizar mensajes"))
+    
+    return ft.Column([
+        ft.Row(header_items, alignment=ft.MainAxisAlignment.START),
         ft.Divider(),
         ft.Container(
             ft.ListView([

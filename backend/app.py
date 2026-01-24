@@ -57,7 +57,7 @@ def get_token():
         print(f"💥 ********** Excepción en get_token: {e}")
         return None
 
-def save_bot_response(phone_number, fromname, bot_message, timestamp, message_id=None):
+def save_bot_response(phone_number, fromname, bot_message, timestamp, message_id=None, group=None):
     token = get_token()
     if not token:
         print("⚠️ No se pudo obtener token para guardar respuesta del bot.")
@@ -87,16 +87,19 @@ def save_bot_response(phone_number, fromname, bot_message, timestamp, message_id
 
     if message_id:
         payload["cr321_messageid"] = message_id
+    
+    if group:
+        payload["cr321_grupo"] = str(group)
 
     payload = {k: v for k, v in payload.items() if v not in [None, ""]}
 
     try:
         response = requests.post(url, headers=headers, json=payload)
-        print(f"✅ ********** Respuesta guardada en Dataverse: {response.status_code}")
+        print(f"✅ ********** Respuesta guardada en Dataverse: {response.status_code} [Grupo: {group}]")
     except Exception as e:
         print(f"❌ Error al guardar respuesta del bot: {e}")
 
-def save_to_dataverse(message_id, fromphone, timestamp, message_type, body, fromname):
+def save_to_dataverse(message_id, fromphone, timestamp, message_type, body, fromname, group=None):
     token = get_token()
   
     if not token:
@@ -126,11 +129,14 @@ def save_to_dataverse(message_id, fromphone, timestamp, message_type, body, from
         "cr321_direction": 462410000
     }
     
+    if group:
+        payload["cr321_grupo"] = str(group)
+    
     payload = {k: v for k, v in payload.items() if v not in [None, ""]}
     
     try:
         response = requests.post(url, headers=headers, json=payload)
-        print(f"✅ ********** Respuesta Dataverse: Código HTTP: {response.status_code}")
+        print(f"✅ ********** Respuesta Dataverse: Código HTTP: {response.status_code} [Grupo: {group}]")
         print(f"✅ **** ***** De: {fromname} - Phone ({fromphone}) - Mensaje: {body}")
     except Exception as e:
         print(f"❌  ********** Error al guardar en Dataverse: {e}")
@@ -340,9 +346,16 @@ def send_manual_message():
     data = request.get_json()
     phone = data.get("phone")
     message = data.get("message")
+    group = data.get("group", "GENERAL")  # Grupo por defecto
+    
+    print(f"[SEND_MESSAGE] Recibiendo solicitud: phone={phone}, message={message}, group={group}")
     
     if not phone or not message:
         return jsonify({"error": "Faltan parámetros"}), 400
+    
+    # Asegurar formato correcto del número (debe incluir código de país sin +)
+    clean_phone = phone.replace("+", "").replace("-", "").replace(" ", "")
+    print(f"[SEND_MESSAGE] Número limpio: {clean_phone}")
     
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
     headers = {
@@ -352,18 +365,23 @@ def send_manual_message():
     
     payload = {
         "messaging_product": "whatsapp",
-        "to": phone,
+        "to": clean_phone,
         "type": "text",
         "text": {"body": message}
     }
     
+    print(f"[SEND_MESSAGE] Enviando a WhatsApp API: {url}")
+    print(f"[SEND_MESSAGE] Payload: {payload}")
+    
     try:
         response = requests.post(url, headers=headers, json=payload)
+        print(f"[SEND_MESSAGE] Respuesta de WhatsApp: {response.status_code}")
+        print(f"[SEND_MESSAGE] Contenido: {response.text}")
         
         if response.status_code == 200:
             message_id = response.json().get("messages", [{}])[0].get("id")
             timestamp = int(datetime.now(timezone.utc).timestamp())
-            save_bot_response(phone, "", message, timestamp, message_id)
+            save_bot_response(clean_phone, "", message, timestamp, message_id, group)
             
             return jsonify({
                 "success": True,
@@ -376,6 +394,7 @@ def send_manual_message():
             }), 500
             
     except Exception as e:
+        print(f"[SEND_MESSAGE] Excepción: {e}")
         return jsonify({"error": str(e)}), 500
 
 # Registrar blueprints
