@@ -13,5 +13,4 @@ Write-Host ""
 $env:ENVIRONMENT = "AZURE"
 
 # Iniciar frontend
-Set-Location C:\VS\CLAUDE-1\mobile
-python main.py
+& python C:\VS\CLAUDE-1\mobile\main.py
