@@ -20,23 +20,21 @@ def SidebarView(on_nav, on_logout=None, user_name=None):
         ],
         selected_index=0,
         on_change=on_nav,
-        label_type=ft.NavigationRailLabelType.ALL,
-        extended=True,
+        label_type=ft.NavigationRailLabelType.SELECTED,  # Solo mostrar label del seleccionado
+        extended=False,  # Modo compacto
+        min_width=60,  # Ancho mínimo para móvil
     )
     
     logout_button = None
     if on_logout:
         logout_button = ft.Container(
-            ft.ElevatedButton(
-                text="Cerrar Sesión",
+            ft.IconButton(
                 icon=ft.icons.LOGOUT,
                 on_click=on_logout,
-                color=ft.colors.RED_400,
-                style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=8)
-                )
+                icon_color=ft.colors.RED_400,
+                tooltip="Cerrar Sesión"
             ),
-            padding=ft.padding.all(10),
+            padding=ft.padding.all(5),
             alignment=ft.alignment.center
         )
     
@@ -44,10 +42,16 @@ def SidebarView(on_nav, on_logout=None, user_name=None):
     if user_info and logout_button:
         return ft.Container(
             ft.Column([
-                user_info,
-                ft.Divider(height=1),
+                ft.Container(
+                    ft.Icon(ft.icons.ACCOUNT_CIRCLE, size=30, color=ft.colors.BLUE),
+                    padding=5
+                ),
                 ft.Container(nav_rail, expand=True),
                 logout_button
+            ], alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            width=60,  # Ancho fijo para móvil
+            bgcolor=ft.colors.SURFACE_VARIANT
+        )
             ], spacing=0),
             expand=True
         )
