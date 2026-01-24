@@ -1,12 +1,25 @@
 Write-Host "Iniciando WhatsApp Manager desde PowerShell..." -ForegroundColor Green
 
-# 1. Iniciar el Backend en una nueva ventana de PowerShell
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\VS\CLAUDE-1\backend; python app.py"
+# Verificar entorno configurado
+$entorno = [System.Environment]::GetEnvironmentVariable("ENVIRONMENT", [System.EnvironmentVariableTarget]::User)
+if ([string]::IsNullOrEmpty($entorno)) {
+    $entorno = "AZURE"  # Por defecto AZURE (backend en la nube)
+}
 
-# 2. Tiempo de espera (2 segundos)
-Start-Sleep -Seconds 2
+Write-Host "Entorno configurado: $entorno" -ForegroundColor Cyan
 
-# 3. Iniciar la App Móvil (Flet/Python) en otra ventana de PowerShell
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\VS\CLAUDE-1\mobile; python main.py"
+if ($entorno -eq "AZURE") {
+    Write-Host "Conectando a Azure App Services" -ForegroundColor Yellow
+    Write-Host "URL: https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net" -ForegroundColor Gray
+} else {
+    Write-Host "Conectando a backend LOCAL" -ForegroundColor Yellow
+    Write-Host "URL: http://localhost:5000" -ForegroundColor Gray
+}
 
-Write-Host "Procesos lanzados con éxito." -ForegroundColor Green
+Write-Host ""
+
+# Iniciar la App Movil con la variable de entorno
+$comando = "cd C:\VS\CLAUDE-1\mobile; `$env:ENVIRONMENT='$entorno'; python main.py"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $comando
+
+Write-Host "[OK] App movil iniciada" -ForegroundColor Green
