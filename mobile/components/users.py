@@ -2,7 +2,8 @@
 import flet as ft
 
 def UsersView(users, on_back):
-    return ft.Column([
+    return ft.Container(
+        ft.Column([
         ft.Row([
             ft.IconButton(icon=ft.icons.ARROW_BACK, on_click=on_back, tooltip="Volver"),
             ft.Text("Usuarios", size=20, weight=ft.FontWeight.BOLD),
@@ -31,4 +32,7 @@ def UsersView(users, on_back):
             ],
             expand=True,
         ) if users else ft.Text("No hay usuarios disponibles", color=ft.colors.GREY_500)
-    ], expand=True, spacing=0)
+        ], expand=True, spacing=0),
+        expand=True,
+        padding=10
+    )

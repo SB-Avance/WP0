@@ -10,6 +10,7 @@ from assets import styles
 import requests
 from datetime import datetime
 from config import API_BASE_URL
+import time
 
 # API_BASE_URL se carga automáticamente desde config.py
 # Para cambiar entre LOCAL/AZURE, editar variable ENVIRONMENT en config.py
@@ -24,23 +25,28 @@ class WhatsAppAPI:
     def set_token(self, token):
         self.token = token
     
-    def get_conversations(self):
+    def get_conversations(self, group_filter=None):
         try:
             url = f"{self.base_url}/api/conversations"
+            if group_filter and group_filter != "TODOS":
+                url += f"?group={group_filter}"
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
             print(f"[API] GET {url}")
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                return data.get("conversations", [])
+                return data.get("conversations", []), data.get("groups", ["GENERAL"])
             else:
-                return []
+                return [], ["GENERAL"]
         except Exception as e:
             print(f"Error al obtener conversaciones: {e}")
-            return []
-    def get_messages(self, phone):
+            return [], ["GENERAL"]
+    
+    def get_messages(self, phone, group_filter=None):
         try:
             url = f"{self.base_url}/api/messages/{phone}"
+            if group_filter and group_filter != "TODOS":
+                url += f"?group={group_filter}"
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
             print(f"[API] GET {url}")
             response = requests.get(url, headers=headers, timeout=10)
@@ -80,10 +86,10 @@ def login_api(correo, clave):
     try:
         url = f"{API_BASE_URL}/api/login"
         print(f"[FRONTEND DEBUG] POST {url}")
-        print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}' Clave: '{clave}'")
+        print(f"[FRONTEND DEBUG] Enviando login - Correo: '{correo}' .Clave: '{clave}'")
         response = requests.post(url, json={"correo": correo, "clave": clave}, timeout=30)
         print(f"[FRONTEND DEBUG] Status code: {response.status_code}")
-        print(f"[FRONTEND DEBUG] Response: {response.text}")
+#        print(f"[FRONTEND DEBUG] Response: {response.text}")
         if response.status_code == 200:
             return {"success": True, "data": response.json()}
         elif response.status_code == 503:
@@ -137,12 +143,18 @@ def main(page: ft.Page):
     page.bgcolor = styles.BACKGROUND_COLOR
     page.title = "WhatsApp CRM/ERP"
     
-    # Configurar tamaño de ventana para móvil (iPhone X)
+    # Configurar para modo móvil
+    page.padding = 0
+    page.spacing = 0
+    page.scroll = ft.ScrollMode.AUTO
+    
+    # Configurar tamaño de ventana para móvil (iPhone X) - solo funciona en FLET_APP
     page.window.width = 375
     page.window.height = 812
     page.window.min_width = 375
     page.window.min_height = 667
     page.window.max_width = 375
+    page.window.max_height = 812
     page.window.max_height = 812
 
     api = WhatsAppAPI(API_BASE_URL)
@@ -238,6 +250,8 @@ def main(page: ft.Page):
         success = api.send_message(phone, text, group)
         
         if success:
+            # Esperar un momento para que el mensaje se guarde en Dataverse
+            time.sleep(1)
             # Recargar mensajes después de enviar
             nonlocal chat_messages
             chat_messages = api.get_messages(phone)
@@ -258,8 +272,9 @@ def main(page: ft.Page):
         conv = selected_conversation["value"]
         if conv:
             phone = conv.get("phone")
+            group = conv.get("group", current_group["value"])
             nonlocal chat_messages
-            chat_messages = api.get_messages(phone)
+            chat_messages = api.get_messages(phone, group)
             render()
 
     def back_to_chats(e=None):
@@ -274,15 +289,15 @@ def main(page: ft.Page):
             conv = selected_conversation["value"]
             page.add(ChatDetailView(conv, chat_messages, back_to_chats, send_message_to_chat, refresh_chat_messages, current_group["value"]))
         else:
-            # Layout responsivo: sidebar a la izquierda en escritorio, arriba en móvil
-            is_mobile = page.width < styles.RESPONSIVE_BREAKPOINT
+            # Layout con sidebar siempre a la izquierda (modo iPhone)
             sidebar = SidebarView(on_nav_change, on_logout, user.get('nombre'))
             content = None
             if current_view["value"] == "dashboard":
                 content = DashboardView(None, on_group_change, current_group["value"])
             elif current_view["value"] == "chats":
-                conversations = api.get_conversations()
-                content = ChatsView(conversations, open_chat)
+                # Obtener conversaciones filtradas por grupo
+                conversations, available_groups = api.get_conversations(current_group["value"])
+                content = ChatsView(conversations, open_chat, current_group["value"], available_groups, on_group_change)
             elif current_view["value"] == "users":
                 # Obtener lista de usuarios real del backend
                 nonlocal users_list
@@ -290,20 +305,18 @@ def main(page: ft.Page):
                 content = UsersView(users_list, back_to_dashboard)
             elif current_view["value"] == "settings":
                 content = SettingsView(back_to_dashboard)
-            if is_mobile:
-                page.add(sidebar)
-                page.add(content)
-            else:
-                page.add(
-                    ft.Row([
-                        sidebar,
-                        ft.VerticalDivider(width=1),
-                        ft.Container(content, expand=True)
-                    ], expand=True)
-                )
+            
+            # Siempre usar layout horizontal (sidebar + content)
+            page.add(
+                ft.Row([
+                    sidebar,
+                    ft.Container(content, expand=True, alignment=ft.alignment.top_left)
+                ], expand=True, spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
+            )
         page.update()
 
     page.on_resized = lambda e: render()
     render()
+    
 if __name__ == "__main__":
-    ft.app(target=main, view=ft.WEB_BROWSER, host="0.0.0.0", port=8501)
+    ft.app(target=main, view=ft.WEB_BROWSER, host="192.168.22.144", port=8501)

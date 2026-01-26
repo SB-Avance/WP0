@@ -27,8 +27,7 @@ def DashboardView(on_back=None, on_group_change=None, current_group=None):
                 ft.dropdown.Option("VENTAS", "Ventas"),
                 ft.dropdown.Option("GENERAL", "General"),
             ],
-            on_change=on_group_change,
-            width=300
+            on_change=on_group_change
         )
         
         controls.append(ft.Text("Categoría de Conversaciones", size=16, weight=ft.FontWeight.BOLD))
@@ -47,4 +46,8 @@ def DashboardView(on_back=None, on_group_change=None, current_group=None):
                 margin=ft.margin.only(top=10)
             ))
     
-    return ft.Column(controls, alignment=ft.MainAxisAlignment.START, spacing=10)
+    return ft.Container(
+        ft.Column(controls, alignment=ft.MainAxisAlignment.START, spacing=10, scroll=ft.ScrollMode.AUTO),
+        expand=True,
+        padding=10
+    )

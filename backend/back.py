@@ -235,7 +235,7 @@ def webhook():
 
 @app.route("/api/conversations", methods=["GET"])
 def get_conversations():
-    """Obtiene las últimas conversaciones de WhatsApp"""
+    """Obtiene las últimas conversaciones de WhatsApp, agrupadas por grupo"""
     print("📱 ********** Solicitud de conversaciones recibida")
     
     token = get_token()
@@ -244,9 +244,15 @@ def get_conversations():
         return jsonify({"error": "Error de autenticación"}), 500
     
     limit = request.args.get('limit', 50)
+    group_filter = request.args.get('group', None)  # Parámetro opcional para filtrar por grupo
     
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s"
     url += f"?$top={limit}&$orderby=cr321_timestamp desc"
+    
+    # Si se especifica un grupo, filtrar por él
+    if group_filter and group_filter.upper() != "TODOS":
+        url += f"&$filter=cr321_grupo eq '{group_filter}'"
+        print(f"🔍 Filtrando por grupo: {group_filter}")
     
     headers = {
         "Authorization": f"Bearer {token}",
@@ -264,23 +270,35 @@ def get_conversations():
             print(f"✅ Registros encontrados: {len(records)}")
             
             conversations = {}
+            groups = set()  # Conjunto de grupos únicos
+            
             for record in records:
                 phone = record.get("cr321_phone")
-                if phone and phone not in conversations:
-                    conversations[phone] = {
-                        "phone": phone,
-                        "name": record.get("cr321_fromname", "Desconocido"),
-                        "last_message": record.get("cr321_body", ""),
-                        "timestamp": record.get("cr321_timestamp"),
-                        "unread": 0
-                    }
+                group = record.get("cr321_grupo", "GENERAL")
+                groups.add(group)
+                
+                if phone:
+                    # Usar phone+group como clave para separar conversaciones por grupo
+                    conv_key = f"{phone}_{group}"
+                    
+                    if conv_key not in conversations:
+                        conversations[conv_key] = {
+                            "phone": phone,
+                            "name": record.get("cr321_fromname", "Desconocido"),
+                            "last_message": record.get("cr321_body", ""),
+                            "timestamp": record.get("cr321_timestamp"),
+                            "group": group,
+                            "unread": 0
+                        }
             
             conv_list = list(conversations.values())
             print(f"✅ Conversaciones únicas: {len(conv_list)}")
+            print(f"✅ Grupos encontrados: {list(groups)}")
             
             return jsonify({
                 "success": True,
-                "conversations": conv_list
+                "conversations": conv_list,
+                "groups": list(groups)  # Lista de grupos disponibles
             })
         else:
             print(f"❌ Error en Dataverse: {response.text}")
@@ -293,15 +311,23 @@ def get_conversations():
 
 @app.route("/api/messages/<phone_number>", methods=["GET"])
 def get_messages(phone_number):
-    """Obtiene todos los mensajes de un número específico"""
+    """Obtiene todos los mensajes de un número específico, opcionalmente filtrado por grupo"""
     print(f"📱 ********** Solicitud de mensajes para: {phone_number}")
     
     token = get_token()
     if not token:
         return jsonify({"error": "Error de autenticación"}), 500
     
+    group_filter = request.args.get('group', None)  # Parámetro opcional para filtrar por grupo
+    
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s"
     url += f"?$filter=cr321_phone eq '{phone_number}'"
+    
+    # Si se especifica un grupo, agregar filtro
+    if group_filter and group_filter.upper() != "TODOS":
+        url += f" and cr321_grupo eq '{group_filter}'"
+        print(f"🔍 Filtrando mensajes por grupo: {group_filter}")
+    
     url += "&$orderby=cr321_timestamp asc"
     
     headers = {

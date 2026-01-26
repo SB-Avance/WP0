@@ -13,4 +13,8 @@ def SettingsView(on_back=None):
     
     controls.append(ft.Text("Configuraciones de la aplicación."))
     
-    return ft.Column(controls)
+    return ft.Container(
+        ft.Column(controls, scroll=ft.ScrollMode.AUTO),
+        expand=True,
+        padding=10
+    )

@@ -2,14 +2,21 @@
 import flet as ft
 
 def SidebarView(on_nav, on_logout=None, user_name=None):
-    user_info = None
-    if user_name:
-        user_info = ft.Container(
+    # Botón de usuario con dropdown/logout
+    user_button = None
+    if user_name and on_logout:
+        user_button = ft.Container(
             ft.Column([
-                ft.Icon(ft.icons.ACCOUNT_CIRCLE, size=40, color=ft.colors.BLUE),
-                ft.Text(user_name, size=12, text_align=ft.TextAlign.CENTER, weight=ft.FontWeight.BOLD)
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
-            padding=ft.padding.all(10)
+                ft.IconButton(
+                    icon=ft.icons.ACCOUNT_CIRCLE,
+                    icon_size=35,
+                    icon_color=ft.colors.BLUE,
+                    on_click=on_logout,
+                    tooltip="Cambiar usuario"
+                ),
+                ft.Text(user_name, size=9, text_align=ft.TextAlign.CENTER, weight=ft.FontWeight.BOLD, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0),
+            padding=ft.padding.symmetric(vertical=5, horizontal=2)
         )
     
     nav_rail = ft.NavigationRail(
@@ -20,54 +27,33 @@ def SidebarView(on_nav, on_logout=None, user_name=None):
         ],
         selected_index=0,
         on_change=on_nav,
-        label_type=ft.NavigationRailLabelType.SELECTED,  # Solo mostrar label del seleccionado
-        extended=False,  # Modo compacto
-        min_width=60,  # Ancho mínimo para móvil
+        label_type=ft.NavigationRailLabelType.SELECTED,
+        extended=False,
+        min_width=60,
     )
     
-    logout_button = None
-    if on_logout:
-        logout_button = ft.Container(
-            ft.IconButton(
-                icon=ft.icons.LOGOUT,
-                on_click=on_logout,
-                icon_color=ft.colors.RED_400,
-                tooltip="Cerrar Sesión"
-            ),
-            padding=ft.padding.all(5),
-            alignment=ft.alignment.center
-        )
-    
     # Construir el layout
-    if user_info and logout_button:
+    if user_button:
+        return ft.Container(
+            ft.Column([
+                user_button,
+                ft.Divider(height=1, color=ft.colors.OUTLINE_VARIANT),
+                ft.Container(
+                    nav_rail,
+                    height=700  # Altura fija para iPhone
+                )
+            ], spacing=0),
+            width=60,
+            bgcolor=ft.colors.SURFACE_VARIANT
+        )
+    else:
         return ft.Container(
             ft.Column([
                 ft.Container(
-                    ft.Icon(ft.icons.ACCOUNT_CIRCLE, size=30, color=ft.colors.BLUE),
-                    padding=5
-                ),
-                ft.Container(nav_rail, expand=True),
-                logout_button
-            ], alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-            width=60,  # Ancho fijo para móvil
+                    nav_rail,
+                    height=800  # Altura fija para iPhone
+                )
+            ], spacing=0),
+            width=60,
             bgcolor=ft.colors.SURFACE_VARIANT
         )
-    elif user_info:
-        return ft.Container(
-            ft.Column([
-                user_info,
-                ft.Divider(height=1),
-                ft.Container(nav_rail, expand=True)
-            ], spacing=0),
-            expand=True
-        )
-    elif logout_button:
-        return ft.Container(
-            ft.Column([
-                ft.Container(nav_rail, expand=True),
-                logout_button
-            ], spacing=0),
-            expand=True
-        )
-    else:
-        return ft.Container(nav_rail, expand=True)
