@@ -1,11 +1,18 @@
 # Script para sincronizar cambios con GitHub automaticamente
 # Uso: .\sync.ps1 "Mensaje del commit"
-python -c "import psutil; [p.kill() for p in psutil.process_iter(['name','exe']) if p.info['name'] and p.info['name'].lower().startswith('python') and p.info['exe'] and 'CLAUDE-1' in p.info['exe']]"
 
 param(
     [Parameter(Mandatory=$false)]
     [string]$Mensaje = "Update: Cambios automaticos"
 )
+
+# Detener procesos Python del proyecto antes de sincronizar
+Write-Host "[*] Deteniendo procesos Python del proyecto..." -ForegroundColor Yellow
+
+Get-Process python* -ErrorAction SilentlyContinue | Where-Object {$_.Path -like "*CLAUDE-1*"} | Stop-Process -Force
+Start-Sleep -Milliseconds 500
+Write-Host "[OK] Procesos detenidos" -ForegroundColor Green
+Write-Host ""
 
 Write-Host "[*] Iniciando sincronizacion con GitHub..." -ForegroundColor Cyan
 Write-Host ""

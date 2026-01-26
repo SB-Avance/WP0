@@ -2,12 +2,11 @@
 import flet as ft
 
 def ChatsView(conversations, on_select, current_group="TODOS", available_groups=None, on_group_change=None):
-    if available_groups is None:
-        available_groups = ["TODOS", "GENERAL"]
+    if available_groups is None or len(available_groups) == 0:
+        available_groups = ["TODOS"]
     else:
-        # Asegurar que "TODOS" esté al inicio
-        if "TODOS" not in available_groups:
-            available_groups = ["TODOS"] + available_groups
+        # Filtrar valores None o vacíos
+        available_groups = [g for g in available_groups if g and str(g).strip()]
     
     def conversation_card(conv):
         name = conv.get("name", "Desconocido")

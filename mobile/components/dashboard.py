@@ -1,7 +1,7 @@
 # Dashboard component for Flet app
 import flet as ft
 
-def DashboardView(on_back=None, on_group_change=None, current_group=None):
+def DashboardView(on_back=None, on_group_change=None, current_group=None, available_groups=None):
     controls = []
     if on_back:
         controls.append(ft.Row([
@@ -16,17 +16,18 @@ def DashboardView(on_back=None, on_group_change=None, current_group=None):
     
     # Selector de grupo
     if on_group_change:
+        # Usar grupos dinámicos del backend
+        if available_groups is None or len(available_groups) == 0:
+            available_groups = ["TODOS"]
+        else:
+            # Filtrar valores None o vacíos
+            available_groups = [g for g in available_groups if g and str(g).strip()]
+        
         group_dropdown = ft.Dropdown(
             label="Grupo Actual",
             hint_text="Selecciona un grupo",
             value=current_group,
-            options=[
-                ft.dropdown.Option("SERVICIOS", "Servicios"),
-                ft.dropdown.Option("COTIZACIONES", "Cotizaciones"),
-                ft.dropdown.Option("SOPORTE", "Soporte"),
-                ft.dropdown.Option("VENTAS", "Ventas"),
-                ft.dropdown.Option("GENERAL", "General"),
-            ],
+            options=[ft.dropdown.Option(key=g, text=g) for g in available_groups],
             on_change=on_group_change
         )
         

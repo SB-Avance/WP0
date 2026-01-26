@@ -35,12 +35,12 @@ class WhatsAppAPI:
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                return data.get("conversations", []), data.get("groups", ["GENERAL"])
+                return data.get("conversations", []), data.get("groups", [])
             else:
-                return [], ["GENERAL"]
+                return [], []
         except Exception as e:
             print(f"Error al obtener conversaciones: {e}")
-            return [], ["GENERAL"]
+            return [], []
     
     def get_messages(self, phone, group_filter=None):
         try:
@@ -293,7 +293,9 @@ def main(page: ft.Page):
             sidebar = SidebarView(on_nav_change, on_logout, user.get('nombre'))
             content = None
             if current_view["value"] == "dashboard":
-                content = DashboardView(None, on_group_change, current_group["value"])
+                # Obtener grupos disponibles del backend
+                _, available_groups = api.get_conversations(current_group["value"])
+                content = DashboardView(None, on_group_change, current_group["value"], available_groups)
             elif current_view["value"] == "chats":
                 # Obtener conversaciones filtradas por grupo
                 conversations, available_groups = api.get_conversations(current_group["value"])

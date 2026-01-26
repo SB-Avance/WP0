@@ -11,6 +11,7 @@ Write-Host ""
 Write-Host "[Frontend] Iniciando aplicacion local..." -ForegroundColor Yellow
 Write-Host ""
 
+Get-Process python* | Where-Object {$_.Path -like "*CLAUDE-1*"} | Stop-Process -Force
 
 # Establecer entorno AZURE
 $env:ENVIRONMENT = "AZURE"
