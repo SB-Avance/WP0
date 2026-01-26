@@ -242,13 +242,19 @@ def get_conversations_for_user(user):
     
     rol = user.get("cr321_rol", "").lower()
     
+    print(f"[DEBUG USUARIO] Rol del usuario: '{rol}' (tipo: {type(rol)})")
+    print(f"[DEBUG USUARIO] Es administrador: {rol == 'administrador'}")
+    print(f"[DEBUG USUARIO] Correo: {user.get('cr321_correo', 'N/A')}")
+    
     # Si es administrador, obtener todas las conversaciones
     if rol == 'administrador':
         url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$orderby=cr321_timestamp desc"
+        print(f"[DEBUG USUARIO] URL para ADMIN (sin filtro de correo)")
     else:
         # Usuarios normales solo ven sus conversaciones
         correo = user.get("cr321_correo")
         url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$filter=cr321_correo eq '{correo}'&$orderby=cr321_timestamp desc"
+        print(f"[DEBUG USUARIO] URL con filtro de correo: {correo}")
     
     headers = {
         "Authorization": f"Bearer {token}",
@@ -262,15 +268,18 @@ def get_conversations_for_user(user):
             conversations = {}
             for record in data.get("value", []):
                 phone = record.get("cr321_phone")
+                grupo = record.get("cr321_grupo", "Sin grupo")
+                print(f"[DEBUG REGISTRO] Teléfono: {phone}, Grupo: '{grupo}' (tipo: {type(grupo)})")
                 if phone and phone not in conversations:
                     conversations[phone] = {
                         "phone": phone,
                         "name": record.get("cr321_fromname", "Desconocido"),
                         "last_message": record.get("cr321_body", ""),
                         "timestamp": record.get("cr321_timestamp"),
-                        "grupo": record.get("cr321_grupo", "Sin grupo"),
+                        "grupo": grupo,
                         "unread": 0
                     }
+                    print(f"[DEBUG REGISTRO] Conversación agregada: {phone} - Grupo: {grupo}")
             return list(conversations.values())
         else:
             print(f"Error Dataverse: {response.status_code} - {response.text}")

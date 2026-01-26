@@ -246,6 +246,10 @@ def get_conversations():
     limit = request.args.get('limit', 50)
     group_filter = request.args.get('group', None)  # Parámetro opcional para filtrar por grupo
     
+    print(f"[DEBUG GRUPO] Valor recibido: '{group_filter}' (tipo: {type(group_filter)})")
+    print(f"[DEBUG GRUPO] Es None: {group_filter is None}")
+    print(f"[DEBUG GRUPO] Comparación con 'TODOS': {group_filter.upper() if group_filter else 'N/A'} != 'TODOS' = {group_filter and group_filter.upper() != 'TODOS'}")
+    
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s"
     url += f"?$top={limit}&$orderby=cr321_timestamp desc"
     
@@ -253,6 +257,9 @@ def get_conversations():
     if group_filter and group_filter.upper() != "TODOS":
         url += f"&$filter=cr321_grupo eq '{group_filter}'"
         print(f"🔍 Filtrando por grupo: {group_filter}")
+        print(f"[DEBUG GRUPO] URL con filtro: {url}")
+    else:
+        print(f"[DEBUG GRUPO] No se aplica filtro (mostrando TODOS los grupos)")
     
     headers = {
         "Authorization": f"Bearer {token}",
@@ -374,6 +381,8 @@ def send_manual_message():
     group = data.get("group", "GENERAL")  # Grupo por defecto
     
     print(f"[SEND_MESSAGE] Recibiendo solicitud: phone={phone}, message={message}, group={group}")
+    print(f"[DEBUG GRUPO SEND] Valor recibido: '{group}' (tipo: {type(group)})")
+    print(f"[DEBUG GRUPO SEND] Datos completos del request: {data}")
     
     if not phone or not message:
         return jsonify({"error": "Faltan parámetros"}), 400
