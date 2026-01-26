@@ -50,7 +50,7 @@ def ChatsView(conversations, on_select, current_group="TODOS", available_groups=
                 ft.Icon(ft.icons.FILTER_LIST, size=20, color=ft.colors.BLUE),
                 ft.Text("Filtrar por grupo:", size=14, weight=ft.FontWeight.BOLD),
                 ft.Dropdown(
-                    options=[ft.dropdown.Option(g) for g in available_groups],
+                    options=[ft.dropdown.Option(key=g, text=g) for g in available_groups],
                     value=current_group,
                     on_change=on_group_change,
                     width=150,
