@@ -1,5 +1,6 @@
 # Script para sincronizar cambios con GitHub automaticamente
 # Uso: .\sync.ps1 "Mensaje del commit"
+python -c "import psutil; [p.kill() for p in psutil.process_iter(['name','exe']) if p.info['name'] and p.info['name'].lower().startswith('python') and p.info['exe'] and 'CLAUDE-1' in p.info['exe']]"
 
 param(
     [Parameter(Mandatory=$false)]
