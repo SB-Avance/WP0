@@ -57,6 +57,24 @@ def get_token():
         print(f"💥 ********** Excepción en get_token: {e}")
         return None
 
+def determine_group_from_message(text):
+    """Determina el grupo según el número de opción seleccionada por el usuario"""
+    text_lower = str(text).lower().strip()
+    
+    # Mapeo de opciones a grupos
+    option_to_group = {
+        "1": "SERVICIOS",
+        "2": "COTIZACIONES",
+        "3": "SOPORTE",
+    }
+    
+    # Si el mensaje es un número de opción, devolver el grupo correspondiente
+    if text_lower in option_to_group:
+        return option_to_group[text_lower]
+    
+    # Si no es una opción conocida, devolver grupo por defecto
+    return "GENERAL"
+
 def save_bot_response(phone_number, fromname, bot_message, timestamp, message_id=None, group=None):
     token = get_token()
     if not token:
@@ -141,22 +159,22 @@ def save_to_dataverse(message_id, fromphone, timestamp, message_type, body, from
     except Exception as e:
         print(f"❌  ********** Error al guardar en Dataverse: {e}")
 
-def send_reply(phonenumber, text, timestamp, fromname=""):
+def send_reply(phonenumber, text, timestamp, fromname="", group=None):
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
 
     greeting = f"👋 ¡Hola {fromname}!" if fromname else "👋 ¡Hola!"
 
     if text in ["hola", "menu", "mm"]:
-        message = f"{greeting} Opciones:\n1️⃣ SERVICIOS A \n2️⃣ COTIZACIONES B \n3️⃣ Hablar con un asesor"
+        message = f"{greeting} Opciones:\n1️⃣ SERVICIOS\n2️⃣ COTIZACIONES\n3️⃣ SOPORTE"
     elif text == "1":
-        message = "SERVICIOS"
+        message = "✅ Has seleccionado SERVICIOS. ¿En qué podemos ayudarte?"
     elif text == "2":
-        message = "COTIZACIONES"
+        message = "📊 Has seleccionado COTIZACIONES. Envíanos los detalles."
     elif text == "3":
-        message = "📞 SOLICITAR UNA LLAMADA"
+        message = "📞 Has seleccionado SOPORTE. Te contactaremos pronto."
     else:
-        message = "❓ No entendí tu mensaje. Escribe 'menu o mm' para ver opciones."
+        message = "❓ No entendí tu mensaje. Escribe 'menu' para ver opciones."
     
     payload = {
         "messaging_product": "whatsapp",
@@ -171,7 +189,7 @@ def send_reply(phonenumber, text, timestamp, fromname=""):
             
         if response.status_code == 200:
             message_id = response.json().get("messages", [{}])[0].get("id")
-            save_bot_response(phonenumber, fromname, message, timestamp, message_id)
+            save_bot_response(phonenumber, fromname, message, timestamp, message_id, group)
     except Exception as e:
         print(f"❌ Excepción al enviar mensaje: {e}")
 
@@ -226,8 +244,12 @@ def webhook():
                     message_type = message.get("type", "")
                     body = message.get("text", {}).get("body", "").lower()
                     
-                    save_to_dataverse(message_id, fromphone, timestamp, message_type, body, fromname)
-                    send_reply(fromphone, body, timestamp, fromname)
+                    # Determinar grupo basado en el contenido del mensaje
+                    group = determine_group_from_message(body)
+                    print(f"[WEBHOOK] Mensaje recibido de {fromphone}: '{body}' -> Grupo: {group}")
+                    
+                    save_to_dataverse(message_id, fromphone, timestamp, message_type, body, fromname, group)
+                    send_reply(fromphone, body, timestamp, fromname, group)
                     
         return "OK", 200
 
