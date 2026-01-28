@@ -1,5 +1,25 @@
 # ChatDetailView: muestra los mensajes de una conversación y permite responder
 import flet as ft
+from datetime import datetime
+
+def format_message_time(timestamp):
+    """Formatea el timestamp para mostrar fecha y hora"""
+    try:
+        if isinstance(timestamp, str):
+            # Intentar parsear ISO format
+            if 'T' in timestamp:
+                dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            else:
+                dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+        elif isinstance(timestamp, (int, float)):
+            dt = datetime.fromtimestamp(timestamp)
+        else:
+            return ""
+        
+        # Formato: "25/01/2026 14:30"
+        return dt.strftime("%d/%m/%Y %H:%M")
+    except:
+        return timestamp if timestamp else ""
 
 def ChatDetailView(conversation, messages, on_back, on_send, on_refresh=None, current_group=None):
     name = conversation.get("name", "Desconocido")
@@ -29,12 +49,20 @@ def ChatDetailView(conversation, messages, on_back, on_send, on_refresh=None, cu
         ft.Container(
             ft.ListView([
                 ft.Container(
-                    ft.Text(f"{msg['body']}", size=15, color=ft.colors.BLACK if msg['direction']=='incoming' else ft.colors.BLUE_900),
+                    ft.Column([
+                        ft.Text(msg['body'], size=15, color=ft.colors.BLACK if msg['direction']=='incoming' else ft.colors.BLUE_900),
+                        ft.Text(
+                            format_message_time(msg.get('timestamp', '')),
+                            size=10,
+                            color=ft.colors.GREY_600,
+                            italic=True
+                        )
+                    ], spacing=2),
                     alignment=ft.alignment.center_left if msg['direction']=='incoming' else ft.alignment.center_right,
-                    padding=ft.padding.only(left=8, right=8, top=4, bottom=4),
-                    margin=ft.margin.only(bottom=4),
+                    padding=ft.padding.all(8),
+                    margin=ft.margin.only(bottom=6, left=8 if msg['direction']=='incoming' else 40, right=40 if msg['direction']=='incoming' else 8),
                     bgcolor=ft.colors.GREY_100 if msg['direction']=='incoming' else ft.colors.BLUE_50,
-                    border_radius=8,
+                    border_radius=12,
                 ) for msg in messages
             ], expand=True, auto_scroll=True),
             expand=True, height=350

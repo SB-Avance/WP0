@@ -23,16 +23,74 @@ from api.settings import bp_settings
 
 # ============ INICIALIZAR FLASK ============
 app = Flask(__name__)
-CORS(app)  # Permitir peticiones desde otras aplicaciones
+
+# CORS optimizado para desarrollo y producción
+allowed_origins = [
+    "http://localhost:*",  # Local development
+    "http://127.0.0.1:*",
+    "https://whatsapp-flask-app-f4gsb7dhhybcg6f6.eastus-01.azurewebsites.net",  # Azure backend
+]
+
+CORS(app, 
+     resources={r"/api/*": {"origins": "*"}},  # API endpoints abiertos
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"])
 
 # ============ INICIO ============
 clear_screen()
 print("--------------  Inicio ----------****------")
 print(goot.mostrar_variables())
 
+# ============ CONSTANTES ============
+# Mapeo de grupos: string <-> integer (Dataverse)
+GROUP_TO_INT = {
+    "SERVICIOS": 1,
+    "COTIZACIONES": 2,
+    "SOPORTE": 3,
+    "GENERAL": None,
+    "TODOS": None
+}
+
+INT_TO_GROUP = {
+    1: "SERVICIOS",
+    2: "COTIZACIONES",
+    3: "SOPORTE",
+    None: "GENERAL"
+}
+
+# Mapeo de tipos de mensaje
+MESSAGE_TYPES = {
+    "text": 462410000,
+    "image": 462410001,
+    "audio": 462410002
+}
+
+# Mapeo de dirección
+MESSAGE_DIRECTION = {
+    "incoming": 462410000,
+    "outgoing": 462410001
+}
+
 # ============ FUNCIONES AUXILIARES ============
 
+def convert_timestamp(timestamp):
+    """Convierte timestamp Unix a formato ISO para Dataverse"""
+    if str(timestamp).isdigit():
+        return datetime.fromtimestamp(int(timestamp), tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+def parse_group_filter(group_filter):
+    """Convierte grupo string a integer, None si no aplica filtro"""
+    if not group_filter or group_filter.upper() in ["TODOS", "NONE", "NULL"]:
+        return None
+    
+    if group_filter.isdigit():
+        return int(group_filter)
+    
+    return GROUP_TO_INT.get(group_filter.upper())
+
 def get_token():
+    """Obtiene token de autenticación de Azure AD para Dataverse"""
     try:
         authority = f"https://login.microsoftonline.com/{TENANT_ID}"
         app_auth = ConfidentialClientApplication(
@@ -41,140 +99,126 @@ def get_token():
             client_credential=CLIENT_SECRET
         )
         token = app_auth.acquire_token_for_client(scopes=[f"{DATAVERSE_URL}/.default"])
-        print("📋 ********** Respuesta MSAL completa::", str(token)[:55])
        
         if "access_token" in token:
-            print("✅ ********** Token obtenido exitosamente ")
+            print("[TOKEN] Token obtenido exitosamente")
             return token["access_token"]
         else:
-            error_desc = token.get("error_description", "Sin descripción")
-            error_code = token.get("error", "Sin código")
-            print(f"❌ -/-/-/-/ Error al obtener token Codigo : {error_code}")
-            print(f"❌ -/-/-/-/ Error al obtener token Descripcion: {error_desc}")
+            error_desc = token.get("error_description", "Sin descripcion")
+            error_code = token.get("error", "Sin codigo")
+            print(f"[TOKEN ERROR] Codigo: {error_code}, Descripcion: {error_desc}")
             return None
             
     except Exception as e:
-        print(f"💥 ********** Excepción en get_token: {e}")
+        print(f"[TOKEN EXCEPTION] {e}")
         return None
 
 def determine_group_from_message(text):
     """Determina el grupo según el número de opción seleccionada por el usuario"""
     text_lower = str(text).lower().strip()
     
-    # Mapeo de opciones a grupos
     option_to_group = {
         "1": "SERVICIOS",
         "2": "COTIZACIONES",
         "3": "SOPORTE",
     }
     
-    # Si el mensaje es un número de opción, devolver el grupo correspondiente
-    if text_lower in option_to_group:
-        return option_to_group[text_lower]
-    
-    # Si no es una opción conocida, devolver grupo por defecto
-    return "GENERAL"
+    return option_to_group.get(text_lower, "GENERAL")
 
 def save_bot_response(phone_number, fromname, bot_message, timestamp, message_id=None, group=None):
+    """Guarda respuesta del bot en Dataverse"""
     token = get_token()
     if not token:
-        print("⚠️ No se pudo obtener token para guardar respuesta del bot.")
-        return
+        print("[SAVE_BOT] No se pudo obtener token")
+        return False
     
-    timestamp_iso = None
-    if str(timestamp).isdigit():
-        timestamp_iso = datetime.fromtimestamp(int(timestamp), tz=timezone.utc).isoformat().replace("+00:00", "Z")
-    else:
-        timestamp_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
+    timestamp_iso = convert_timestamp(timestamp)
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-    direction_map = {
-        "incoming": 462410000,
-        "outgoing": 462410001
-    }
     
     payload = {
         "cr321_phone": str(phone_number),
         "cr321_fromname": fromname,
         "cr321_body": str(bot_message),
         "cr321_timestamp": timestamp_iso,
-        "cr321_direction": direction_map["outgoing"]
+        "cr321_direction": MESSAGE_DIRECTION["outgoing"]
     }
 
     if message_id:
         payload["cr321_messageid"] = message_id
     
-    if group:
-        payload["cr321_grupo"] = str(group)
+    # Agregar grupo si aplica
+    grupo_int = GROUP_TO_INT.get(group) if group else None
+    if grupo_int is not None:
+        payload["cr321_grupo"] = grupo_int
 
+    # Limpiar valores None o vacíos
     payload = {k: v for k, v in payload.items() if v not in [None, ""]}
 
     try:
         response = requests.post(url, headers=headers, json=payload)
-        print(f"✅ ********** Respuesta guardada en Dataverse: {response.status_code} [Grupo: {group}]")
+        if response.status_code in [200, 201, 204]:
+            print(f"[SAVE_BOT] Guardado exitoso [Grupo: {group}]")
+            return True
+        else:
+            print(f"[SAVE_BOT ERROR] {response.status_code}: {response.text}")
+            return False
     except Exception as e:
-        print(f"❌ Error al guardar respuesta del bot: {e}")
+        print(f"[SAVE_BOT EXCEPTION] {e}")
+        return False
 
 def save_to_dataverse(message_id, fromphone, timestamp, message_type, body, fromname, group=None):
+    """Guarda mensaje entrante en Dataverse"""
     token = get_token()
-  
     if not token:
-        print("⚠️ **********  No se pudo obtener token, no se guarda en Dataverse.")
+        print("[SAVE_DATAVERSE] No se pudo obtener token")
         return
 
-    timestamp_iso = None
-    if str(timestamp).isdigit():
-        timestamp_iso = datetime.fromtimestamp(int(timestamp), tz=timezone.utc).isoformat().replace("+00:00", "Z")
-
+    timestamp_iso = convert_timestamp(timestamp)
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-   
-    option_map = {
-        "text": 462410000,
-        "image": 462410001,
-        "audio": 462410002
-    }
     
     payload = {
         "cr321_messageid": str(message_id),  
         "cr321_phone": fromphone,
         "cr321_timestamp": timestamp_iso,              
-        "cr321_messagetype": option_map.get(message_type, 462410000),
+        "cr321_messagetype": MESSAGE_TYPES.get(message_type, MESSAGE_TYPES["text"]),
         "cr321_body": body,
         "cr321_fromname": fromname,
-        "cr321_direction": 462410000
+        "cr321_direction": MESSAGE_DIRECTION["incoming"]
     }
     
-    if group:
-        payload["cr321_grupo"] = str(group)
+    # Agregar grupo si aplica
+    grupo_int = GROUP_TO_INT.get(group) if group else None
+    if grupo_int is not None:
+        payload["cr321_grupo"] = grupo_int
     
+    # Limpiar valores None o vacíos
     payload = {k: v for k, v in payload.items() if v not in [None, ""]}
     
     try:
         response = requests.post(url, headers=headers, json=payload)
-        print(f"✅ ********** Respuesta Dataverse: Código HTTP: {response.status_code} [Grupo: {group}]")
-        print(f"✅ **** ***** De: {fromname} - Phone ({fromphone}) - Mensaje: {body}")
+        print(f"[SAVE_DATAVERSE] {response.status_code} - De: {fromname} ({fromphone}) - Grupo: {group}")
     except Exception as e:
-        print(f"❌  ********** Error al guardar en Dataverse: {e}")
+        print(f"[SAVE_DATAVERSE ERROR] {e}")
 
 def send_reply(phonenumber, text, timestamp, fromname="", group=None):
+    """Envía respuesta automática por WhatsApp"""
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
 
-    greeting = f"👋 ¡Hola {fromname}!" if fromname else "👋 ¡Hola!"
+    greeting = f"Hola {fromname}! que servicio requiere" if fromname else "Hola! que servicio requiere"
 
     if text in ["hola", "menu", "mm"]:
-        message = f"{greeting} Opciones:\n1️⃣ SERVICIOS\n2️⃣ COTIZACIONES\n3️⃣ SOPORTE"
+        message = f"{greeting} Opciones:\n1. PERSONAS\n2. EMPRESAS\n3. COORDINACION"
     elif text == "1":
-        message = "✅ Has seleccionado SERVICIOS. ¿En qué podemos ayudarte?"
+        message = "Has seleccionado PERSONAS. En que podemos ayudarte?"
     elif text == "2":
-        message = "📊 Has seleccionado COTIZACIONES. Envíanos los detalles."
+        message = "Has seleccionado EMPRESAS. Envianos los detalles."
     elif text == "3":
-        message = "📞 Has seleccionado SOPORTE. Te contactaremos pronto."
+        message = "Has seleccionado COORDINACION. Te contactaremos pronto."
     else:
-        message = "❓ No entendí tu mensaje. Escribe 'menu' para ver opciones."
+        message = "No entendi tu mensaje. Escribe 'menu' para ver opciones."
     
     payload = {
         "messaging_product": "whatsapp",
@@ -185,16 +229,43 @@ def send_reply(phonenumber, text, timestamp, fromname="", group=None):
 
     try:
         response = requests.post(url, headers=headers, json=payload)
-        print(f"✅ **** ***** Mensaje enviado -> {fromname} Status -> {response.status_code}")
+        print(f"[SEND_REPLY] {response.status_code} -> {fromname}")
             
         if response.status_code == 200:
             message_id = response.json().get("messages", [{}])[0].get("id")
             save_bot_response(phonenumber, fromname, message, timestamp, message_id, group)
     except Exception as e:
-        print(f"❌ Excepción al enviar mensaje: {e}")
+        print(f"[SEND_REPLY ERROR] {e}")
 
 
 # ============ RUTAS / ENDPOINTS ============
+
+# ============ HEALTH CHECK ============
+@app.route("/", methods=["GET"])
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint para Azure App Services y monitoreo"""
+    is_production = os.environ.get("WEBSITE_INSTANCE_ID") is not None
+    return jsonify({
+        "status": "healthy",
+        "service": "WhatsApp Manager API",
+        "environment": "AZURE" if is_production else "LOCAL",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "1.0.0"
+    }), 200
+
+@app.route("/api/status", methods=["GET"])
+def api_status():
+    """Status detallado incluyendo conexión a Dataverse"""
+    token = get_token()
+    dataverse_connected = token is not None
+    
+    return jsonify({
+        "status": "operational",
+        "dataverse": "connected" if dataverse_connected else "disconnected",
+        "phone_id": PHONE_NUMBER_ID[:10] + "..." if PHONE_NUMBER_ID else "not configured",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }), 200
 
 # ============ ENDPOINT LOGIN USUARIO ============
 @app.route("/login", methods=["POST"])
@@ -258,56 +329,44 @@ def webhook():
 @app.route("/api/conversations", methods=["GET"])
 def get_conversations():
     """Obtiene las últimas conversaciones de WhatsApp, agrupadas por grupo"""
-    print("📱 ********** Solicitud de conversaciones recibida")
+    print("[API] Solicitud de conversaciones recibida")
     
     token = get_token()
     if not token:
-        print("❌ No se pudo obtener token")
-        return jsonify({"error": "Error de autenticación"}), 500
+        return jsonify({"error": "Error de autenticacion"}), 500
     
     limit = request.args.get('limit', 50)
-    group_filter = request.args.get('group', None)  # Parámetro opcional para filtrar por grupo
+    group_filter = request.args.get('group', None)
+    grupo_int = parse_group_filter(group_filter)
     
-    print(f"[DEBUG GRUPO] Valor recibido: '{group_filter}' (tipo: {type(group_filter)})")
-    print(f"[DEBUG GRUPO] Es None: {group_filter is None}")
-    print(f"[DEBUG GRUPO] Comparación con 'TODOS': {group_filter.upper() if group_filter else 'N/A'} != 'TODOS' = {group_filter and group_filter.upper() != 'TODOS'}")
+    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$top={limit}&$orderby=cr321_timestamp desc"
     
-    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s"
-    url += f"?$top={limit}&$orderby=cr321_timestamp desc"
-    
-    # Si se especifica un grupo, filtrar por él
-    if group_filter and group_filter.upper() != "TODOS":
-        url += f"&$filter=cr321_grupo eq '{group_filter}'"
-        print(f"🔍 Filtrando por grupo: {group_filter}")
-        print(f"[DEBUG GRUPO] URL con filtro: {url}")
+    if grupo_int is not None:
+        url += f"&$filter=cr321_grupo eq {grupo_int}"
+        print(f"[CONVERSATIONS] Filtrando por grupo: {grupo_int}")
     else:
-        print(f"[DEBUG GRUPO] No se aplica filtro (mostrando TODOS los grupos)")
+        print(f"[CONVERSATIONS] Mostrando TODOS los grupos")
     
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     
     try:
-        print(f"🔍 Consultando Dataverse: {url}")
         response = requests.get(url, headers=headers)
-        print(f"📊 Respuesta Dataverse: {response.status_code}")
         
         if response.status_code == 200:
             data = response.json()
             records = data.get("value", [])
-            print(f"✅ Registros encontrados: {len(records)}")
+            print(f"[CONVERSATIONS] Registros encontrados: {len(records)}")
             
             conversations = {}
-            groups = set()  # Conjunto de grupos únicos
+            groups = set()
             
             for record in records:
                 phone = record.get("cr321_phone")
-                group = record.get("cr321_grupo", "GENERAL")
+                group_int = record.get("cr321_grupo")
+                group = INT_TO_GROUP.get(group_int, "GENERAL")
                 groups.add(group)
                 
                 if phone:
-                    # Usar phone+group como clave para separar conversaciones por grupo
                     conv_key = f"{phone}_{group}"
                     
                     if conv_key not in conversations:
@@ -321,48 +380,42 @@ def get_conversations():
                         }
             
             conv_list = list(conversations.values())
-            print(f"✅ Conversaciones únicas: {len(conv_list)}")
-            print(f"✅ Grupos encontrados: {list(groups)}")
+            print(f"[CONVERSATIONS] Conversaciones unicas: {len(conv_list)}")
             
             return jsonify({
                 "success": True,
                 "conversations": conv_list,
-                "groups": list(groups)  # Lista de grupos disponibles
+                "groups": list(groups)
             })
         else:
-            print(f"❌ Error en Dataverse: {response.text}")
+            print(f"[CONVERSATIONS ERROR] {response.text}")
             return jsonify({"error": "Error al consultar Dataverse"}), 500
             
     except Exception as e:
-        print(f"❌ Excepción: {e}")
+        print(f"[CONVERSATIONS EXCEPTION] {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/messages/<phone_number>", methods=["GET"])
 def get_messages(phone_number):
     """Obtiene todos los mensajes de un número específico, opcionalmente filtrado por grupo"""
-    print(f"📱 ********** Solicitud de mensajes para: {phone_number}")
+    print(f"[API] Solicitud de mensajes para: {phone_number}")
     
     token = get_token()
     if not token:
-        return jsonify({"error": "Error de autenticación"}), 500
+        return jsonify({"error": "Error de autenticacion"}), 500
     
-    group_filter = request.args.get('group', None)  # Parámetro opcional para filtrar por grupo
+    group_filter = request.args.get('group', None)
+    grupo_int = parse_group_filter(group_filter)
     
-    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s"
-    url += f"?$filter=cr321_phone eq '{phone_number}'"
+    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$filter=cr321_phone eq '{phone_number}'"
     
-    # Si se especifica un grupo, agregar filtro
-    if group_filter and group_filter.upper() != "TODOS":
-        url += f" and cr321_grupo eq '{group_filter}'"
-        print(f"🔍 Filtrando mensajes por grupo: {group_filter}")
+    if grupo_int is not None:
+        url += f" and cr321_grupo eq {grupo_int}"
+        print(f"[MESSAGES] Filtrando por grupo: {grupo_int}")
     
     url += "&$orderby=cr321_timestamp asc"
-    
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     
     try:
         response = requests.get(url, headers=headers)
@@ -370,7 +423,7 @@ def get_messages(phone_number):
         if response.status_code == 200:
             data = response.json()
             records = data.get("value", [])
-            print(f"✅ Mensajes encontrados: {len(records)}")
+            print(f"[MESSAGES] Mensajes encontrados: {len(records)}")
             
             messages = []
             for record in records:
@@ -378,19 +431,16 @@ def get_messages(phone_number):
                     "id": record.get("cr321_messageid"),
                     "body": record.get("cr321_body"),
                     "timestamp": record.get("cr321_timestamp"),
-                    "direction": "incoming" if record.get("cr321_direction") == 462410000 else "outgoing",
+                    "direction": "incoming" if record.get("cr321_direction") == MESSAGE_DIRECTION["incoming"] else "outgoing",
                     "type": record.get("cr321_messagetype")
                 })
             
-            return jsonify({
-                "success": True,
-                "messages": messages
-            })
+            return jsonify({"success": True, "messages": messages})
         else:
             return jsonify({"error": "Error al consultar mensajes"}), 500
             
     except Exception as e:
-        print(f"❌ Excepción: {e}")
+        print(f"[MESSAGES EXCEPTION] {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -402,9 +452,12 @@ def send_manual_message():
     message = data.get("message")
     group = data.get("group", "GENERAL")  # Grupo por defecto
     
+    print(f"\n{'='*60}")
+    print(f"[SEND_MESSAGE] NUEVA SOLICITUD DE ENVÍO")
     print(f"[SEND_MESSAGE] Recibiendo solicitud: phone={phone}, message={message}, group={group}")
     print(f"[DEBUG GRUPO SEND] Valor recibido: '{group}' (tipo: {type(group)})")
     print(f"[DEBUG GRUPO SEND] Datos completos del request: {data}")
+    print(f"{'='*60}\n")
     
     if not phone or not message:
         return jsonify({"error": "Faltan parámetros"}), 400
@@ -437,7 +490,9 @@ def send_manual_message():
         if response.status_code == 200:
             message_id = response.json().get("messages", [{}])[0].get("id")
             timestamp = int(datetime.now(timezone.utc).timestamp())
-            save_bot_response(clean_phone, "", message, timestamp, message_id, group)
+            print(f"[SEND_MESSAGE] Guardando en Dataverse: message_id={message_id}, grupo={group}")
+            save_result = save_bot_response(clean_phone, "", message, timestamp, message_id, group)
+            print(f"[SEND_MESSAGE] Resultado de guardar en Dataverse: {save_result}")
             
             return jsonify({
                 "success": True,
@@ -464,4 +519,12 @@ app.register_blueprint(bp_settings)
 
 # ============ EJECUTAR APLICACIÓN ============
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+    # Debug mode solo en desarrollo local
+    is_production = os.environ.get("WEBSITE_INSTANCE_ID") is not None  # Variable de Azure App Services
+    debug_mode = False  # Desactivar debug temporalmente para Windows
+    
+    print(f"[STARTUP] Modo: {'PRODUCCION (Azure)' if is_production else 'DESARROLLO (Local)'}")
+    print(f"[STARTUP] Debug: {'Desactivado' if not debug_mode else 'Activado'}")
+    print(f"[STARTUP] Iniciando servidor en http://localhost:5000")
+    
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=debug_mode, use_reloader=False)
