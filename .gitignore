@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+
+# Virtual Environment
+venv/
+venv_clean/
+ENV/
+env/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Environment variables
+.env
+.env.local
+
+# Azure
+.azure/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
