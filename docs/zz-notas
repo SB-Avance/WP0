@@ -1,0 +1,62 @@
+Crear aplicaciones como experto en Python, WhatsApp API, y desarrollo de chatbots
+
+USANDO EL CODIGO ACTUAL
+Si se puede mejorar haznoslo saber
+
+
+Que permita multiples conexiones WhatsApp
+Usando WhatsApp Api, Dataverse, Python para Backend, Flet para Frontend
+Tablas en Dataverse verificarlas:
+- chats00 "cr321_adatawp0" existe. 
+- usuarios "cr321_usuarios" existe, 
+- grupo "cr321_grupos" existe (campos: grupoid (consecutivo), nombre, tipo (tipo "A", "B", "C"), descripcion.
+Cambiar Los elemento de la tabla grupo por los siguientes Solicitud Ticket, Cotizacion, informacion, 
+Solicitar atencion de agente. que son tipo "A" segun tabla de grupo
+- chatbots "cr321_chatbots" existe. 
+- contacto "cr321_contacto" existe.
+- ticket "cr321_ticket" existe (Campos: from name, de chats00, id del ticket consecutivo),
+- estados "cr321_estados" existe (campos: id estado consecutivo, nombre, descripcion)
+- usuario grupo "cr321_usuariogrupo" existe relaciones de pertenecia entre usuarios y grupos
+- flujos "cr321_flows" existe
+- cuentas de whatsapp "cr321_cuentadewhatsapp" existe
+- templates "cr321_template" existe
+
+- El menu de whatsapp debe tener los elementos de la tabla grupo que sean tipo "A"
+
+- En el frontend (ya hay una parte en este proyecto) 
+- la pantalla debe presentar:
+a la izquierda: boton para cambio de usuario, cuadro combinado para los grupos, ajustes (vacia), chatbots (que abra
+la tabla cr321_chatbots en modo edicion)
+a la derecha los chats, los chat de la derecha deben mostrar los chat filtrados segun el grupo al que pertenezca el usuario 
+
+- EL usuario con ROL de usuario solo puede ver la pantalla con los chats que esten marcados como 
+pertenecientes al grupo que pertenezca.
+- EL usuario con ROL de administrador puede ver todos los chat de grupo.
+
+
+La estructura Menú principal del whatsapp que se debe crear como primer chatbot en la tabla cr321_chatbots
+y adicional en la pantalla una opcion en ajustes la opcion de crear multiples mas.
+opcion 	1. solicitud ticket
+    pregunta	nombre
+    pregunta	empresa
+    pregunta	describa solitud de soporte
+opcion	2. cotizaciones
+    pregunta	Describa el producto, marca, y modelo si lo tiene
+opcion	3. informacion 
+opcion	4. Solicitar atencion de agente.
+
+************************************
+conservar para ejecutar local o en azure lo siguiente:
+iniciar_backend.ps1		Inicia Flask en http://localhost:5000
+.\iniciar.ps1 LOCAL		Frontend conecta a backend local
+.\iniciar.ps1 AZURE		Frontend conecta a Azure (sin backend local)
+
+************************************
+IMPORTANTE: NO USAR CARACTERES ESPECIALES EN SCRIPTS PS1
+- Evitar caracteres Unicode como: checkmark, box-drawing, bullets
+- Usar solo ASCII: [OK], [ERROR], [WARN], [AVISO]
+- Usar solo guiones y signos de igual para separadores
+- Archivos afectados: *.ps1 (PowerShell scripts)
+- Archivos MD pueden usar emojis sin problema
+
+Es para cadena de conexion https://org460b8a6c.crm2.dynamics.com

@@ -20,6 +20,15 @@ from api.conversations import bp_conversations
 from api.webhook import bp_webhook
 from api.reportes import bp_reportes
 from api.settings import bp_settings
+from api.grupos import bp_grupos
+from api.estados import bp_estados
+from api.tickets import bp_tickets
+from api.usuario_grupos import bp_usuario_grupos
+from api.chatbots import bp_chatbots
+from api.whatsapp_accounts import bp_whatsapp_accounts
+# from api.cotizaciones import cotizaciones_bp  # Comentado temporalmente - import circular
+from api.chats_extended import bp as bp_chats_extended
+from api.dashboard import bp_dashboard
 
 # ============ INICIALIZAR FLASK ============
 app = Flask(__name__)
@@ -340,6 +349,8 @@ def get_conversations():
     grupo_int = parse_group_filter(group_filter)
     
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$top={limit}&$orderby=cr321_timestamp desc"
+    # Expandir categoría del chatbot si existe el campo
+    url += "&$expand=cr321_categoria_chatbot($select=cr321_nombre,cr321_tipo,cr321_descripcion)"
     
     if grupo_int is not None:
         url += f"&$filter=cr321_grupo eq {grupo_int}"
@@ -516,6 +527,17 @@ app.register_blueprint(bp_conversations)
 app.register_blueprint(bp_webhook)
 app.register_blueprint(bp_reportes)
 app.register_blueprint(bp_settings)
+app.register_blueprint(bp_grupos)
+app.register_blueprint(bp_estados)
+app.register_blueprint(bp_tickets)
+app.register_blueprint(bp_usuario_grupos)
+app.register_blueprint(bp_chatbots)
+app.register_blueprint(bp_whatsapp_accounts)
+# app.register_blueprint(cotizaciones_bp)  # Comentado temporalmente
+app.register_blueprint(bp_chats_extended)
+print("[STARTUP] Registrando blueprint dashboard...")
+app.register_blueprint(bp_dashboard)
+print("[STARTUP] Dashboard blueprint registrado en /api/dashboard")
 
 # ============ EJECUTAR APLICACIÓN ============
 if __name__ == "__main__":

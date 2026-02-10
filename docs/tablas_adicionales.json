@@ -1,0 +1,431 @@
+{
+  "guia": {
+    "titulo": "Tablas Adicionales de Dataverse",
+    "objetivo": "Crear 4 tablas adicionales para funcionalidad avanzada del sistema de chatbot",
+    "tiempo_estimado": "30-40 minutos"
+  },
+  "tablas": [
+    {
+      "numero": 5,
+      "nombre_sistema": "cr321_chatbots",
+      "nombre_mostrar": "Chatbots",
+      "nombre_plural": "Chatbots",
+      "descripcion": "Gestión de chatbots de WhatsApp",
+      "ownershipType": "UserOwned",
+      "campos": [
+        {
+          "nombre": "cr321_chatbotsid",
+          "tipo": "Uniqueidentifier",
+          "es_clave_primaria": true,
+          "descripcion": "ID de Chatbot"
+        },
+        {
+          "nombre": "cr321_name",
+          "tipo": "Texto",
+          "longitud": 100,
+          "obligatorio": true,
+          "es_nombre_primario": true,
+          "descripcion": "Nombre del Bot"
+        },
+        {
+          "nombre": "cr321_type",
+          "tipo": "Conjunto de opciones",
+          "longitud": null,
+          "obligatorio": false,
+          "descripcion": "Tipo de Bot",
+          "valor_predeterminado": 462410000,
+          "opciones": [
+            {
+              "etiqueta": "FlowBot",
+              "valor": 462410000
+            },
+            {
+              "etiqueta": "Simple",
+              "valor": 462410001
+            },
+            {
+              "etiqueta": "AI Assistant",
+              "valor": 462410002
+            }
+          ]
+        },
+        {
+          "nombre": "cr321_config",
+          "tipo": "Texto multilínea",
+          "longitud": 100000,
+          "obligatorio": false,
+          "descripcion": "Configuración del bot en formato JSON"
+        },
+        {
+          "nombre": "cr321_active",
+          "tipo": "Sí/No",
+          "longitud": null,
+          "obligatorio": false,
+          "valor_predeterminado": true,
+          "descripcion": "Activo"
+        },
+        {
+          "nombre": "cr321_whatsappaccountid",
+          "tipo": "Búsqueda",
+          "longitud": null,
+          "obligatorio": false,
+          "descripcion": "Cuenta de WhatsApp",
+          "relacion": {
+            "tabla_relacionada": "cr321_whatsappaccounts",
+            "tipo_relacion": "Muchos a uno (N:1)"
+          }
+        },
+        {
+          "nombre": "cr321_ownerid",
+          "tipo": "Búsqueda",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Propietario",
+          "relacion": {
+            "tabla_relacionada": "systemuser",
+            "tipo_relacion": "Muchos a uno (N:1)",
+            "nota": "Tabla del sistema de Dataverse"
+          }
+        }
+      ]
+    },
+    {
+      "numero": 6,
+      "nombre_sistema": "cr321_flows",
+      "nombre_mostrar": "Flujos de Conversación",
+      "nombre_plural": "Flujos",
+      "descripcion": "Definición de flujos para chatbots",
+      "ownershipType": "UserOwned",
+      "campos": [
+        {
+          "nombre": "cr321_flowsid",
+          "tipo": "Uniqueidentifier",
+          "es_clave_primaria": true,
+          "descripcion": "ID de Flujo"
+        },
+        {
+          "nombre": "cr321_name",
+          "tipo": "Texto",
+          "longitud": 100,
+          "obligatorio": true,
+          "es_nombre_primario": true,
+          "descripcion": "Nombre del Flujo"
+        },
+        {
+          "nombre": "cr321_chatbotid",
+          "tipo": "Búsqueda",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Chatbot asociado",
+          "relacion": {
+            "tabla_relacionada": "cr321_chatbots",
+            "tipo_relacion": "Muchos a uno (N:1)"
+          }
+        },
+        {
+          "nombre": "cr321_nodes",
+          "tipo": "Texto multilínea",
+          "longitud": 100000,
+          "obligatorio": false,
+          "descripcion": "Definición de nodos en formato JSON"
+        },
+        {
+          "nombre": "cr321_edges",
+          "tipo": "Texto multilínea",
+          "longitud": 100000,
+          "obligatorio": false,
+          "descripcion": "Definición de conexiones entre nodos en JSON"
+        },
+        {
+          "nombre": "cr321_version",
+          "tipo": "Número entero",
+          "longitud": null,
+          "obligatorio": false,
+          "valor_predeterminado": 1,
+          "descripcion": "Versión del flujo"
+        }
+      ]
+    },
+    {
+      "numero": 7,
+      "nombre_sistema": "cr321_automations",
+      "nombre_mostrar": "Automatizaciones",
+      "nombre_plural": "Automatizaciones",
+      "descripcion": "Reglas de automatización",
+      "ownershipType": "UserOwned",
+      "campos": [
+        {
+          "nombre": "cr321_automationsid",
+          "tipo": "Uniqueidentifier",
+          "es_clave_primaria": true,
+          "descripcion": "ID de Automatización"
+        },
+        {
+          "nombre": "cr321_name",
+          "tipo": "Texto",
+          "longitud": 100,
+          "obligatorio": true,
+          "es_nombre_primario": true,
+          "descripcion": "Nombre"
+        },
+        {
+          "nombre": "cr321_trigger",
+          "tipo": "Conjunto de opciones",
+          "longitud": null,
+          "obligatorio": false,
+          "descripcion": "Disparador de la automatización",
+          "opciones": [
+            {
+              "etiqueta": "Mensaje Recibido",
+              "valor": 462410000
+            },
+            {
+              "etiqueta": "Palabra Clave",
+              "valor": 462410001
+            },
+            {
+              "etiqueta": "Horario",
+              "valor": 462410002
+            },
+            {
+              "etiqueta": "Evento de Sistema",
+              "valor": 462410003
+            }
+          ]
+        },
+        {
+          "nombre": "cr321_conditions",
+          "tipo": "Texto multilínea",
+          "longitud": 10000,
+          "obligatorio": false,
+          "descripcion": "Condiciones en formato JSON"
+        },
+        {
+          "nombre": "cr321_actions",
+          "tipo": "Texto multilínea",
+          "longitud": 10000,
+          "obligatorio": false,
+          "descripcion": "Acciones a ejecutar en formato JSON"
+        },
+        {
+          "nombre": "cr321_active",
+          "tipo": "Sí/No",
+          "longitud": null,
+          "obligatorio": false,
+          "valor_predeterminado": true,
+          "descripcion": "Activa"
+        },
+        {
+          "nombre": "cr321_ownerid",
+          "tipo": "Búsqueda",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Propietario",
+          "relacion": {
+            "tabla_relacionada": "systemuser",
+            "tipo_relacion": "Muchos a uno (N:1)"
+          }
+        }
+      ]
+    },
+    {
+      "numero": 8,
+      "nombre_sistema": "cr321_templates",
+      "nombre_mostrar": "Plantillas",
+      "nombre_plural": "Plantillas",
+      "descripcion": "Plantillas de mensajes de WhatsApp",
+      "ownershipType": "UserOwned",
+      "campos": [
+        {
+          "nombre": "cr321_templatesid",
+          "tipo": "Uniqueidentifier",
+          "es_clave_primaria": true,
+          "descripcion": "ID de Plantilla"
+        },
+        {
+          "nombre": "cr321_name",
+          "tipo": "Texto",
+          "longitud": 100,
+          "obligatorio": true,
+          "es_nombre_primario": true,
+          "descripcion": "Nombre"
+        },
+        {
+          "nombre": "cr321_content",
+          "tipo": "Texto multilínea",
+          "longitud": 5000,
+          "obligatorio": true,
+          "descripcion": "Contenido de la plantilla"
+        },
+        {
+          "nombre": "cr321_category",
+          "tipo": "Conjunto de opciones",
+          "longitud": null,
+          "obligatorio": false,
+          "descripcion": "Categoría de la plantilla",
+          "opciones": [
+            {
+              "etiqueta": "Marketing",
+              "valor": 462410000
+            },
+            {
+              "etiqueta": "Servicio",
+              "valor": 462410001
+            },
+            {
+              "etiqueta": "Ventas",
+              "valor": 462410002
+            },
+            {
+              "etiqueta": "Soporte",
+              "valor": 462410003
+            }
+          ]
+        },
+        {
+          "nombre": "cr321_language",
+          "tipo": "Texto",
+          "longitud": 10,
+          "obligatorio": false,
+          "valor_predeterminado": "es",
+          "descripcion": "Idioma de la plantilla"
+        },
+        {
+          "nombre": "cr321_approved",
+          "tipo": "Sí/No",
+          "longitud": null,
+          "obligatorio": false,
+          "valor_predeterminado": false,
+          "descripcion": "Aprobada por Meta"
+        },
+        {
+          "nombre": "cr321_whatsappaccountid",
+          "tipo": "Búsqueda",
+          "longitud": null,
+          "obligatorio": false,
+          "descripcion": "Cuenta WhatsApp",
+          "relacion": {
+            "tabla_relacionada": "cr321_whatsappaccounts",
+            "tipo_relacion": "Muchos a uno (N:1)"
+          }
+        }
+      ]
+    }
+  ],
+  "dependencias": {
+    "orden_creacion": [
+      "cr321_whatsappaccounts (debe existir previamente)",
+      "cr321_chatbots (depende de whatsappaccounts)",
+      "cr321_flows (depende de chatbots)",
+      "cr321_automations (independiente)",
+      "cr321_templates (depende de whatsappaccounts)"
+    ]
+  },
+  "notas_importantes": {
+    "campos_texto_multilinea": {
+      "tipo": "Texto multilínea (Memo)",
+      "longitud_maxima": 100000,
+      "formato": "Texto plano",
+      "uso": "Para configuraciones JSON y textos largos"
+    },
+    "campos_booleanos": {
+      "tipo": "Sí/No (Two Options)",
+      "valores_predeterminados": {
+        "cr321_active": true,
+        "cr321_approved": false
+      }
+    },
+    "campo_systemuser": {
+      "descripcion": "Tabla del sistema de Dataverse",
+      "uso": "Representa usuarios del sistema",
+      "disponibilidad": "Siempre disponible en cualquier entorno"
+    }
+  },
+  "casos_uso": {
+    "cr321_chatbots": {
+      "descripcion": "Almacena la configuración de diferentes bots",
+      "tipos": [
+        "FlowBot: Bots basados en flujos visuales",
+        "Simple: Bots con respuestas simples",
+        "AI Assistant: Bots con inteligencia artificial"
+      ]
+    },
+    "cr321_flows": {
+      "descripcion": "Define los flujos de conversación",
+      "componentes": [
+        "Nodos: Pasos del flujo (mensajes, preguntas, acciones)",
+        "Conexiones: Transiciones entre nodos"
+      ]
+    },
+    "cr321_automations": {
+      "descripcion": "Automatizaciones basadas en triggers",
+      "triggers": [
+        "Mensaje Recibido: Al recibir cualquier mensaje",
+        "Palabra Clave: Al detectar palabras específicas",
+        "Horario: En momentos programados",
+        "Evento de Sistema: Cuando ocurre un evento"
+      ]
+    },
+    "cr321_templates": {
+      "descripcion": "Plantillas aprobadas por Meta",
+      "caracteristicas": [
+        "Categorías para diferentes tipos de comunicación",
+        "Multiidioma",
+        "Control de aprobación de Meta"
+      ]
+    }
+  },
+  "checklist": [
+    "Verificar que cr321_whatsappaccounts existe",
+    "Crear cr321_chatbots con todos los campos",
+    "Crear cr321_flows con relación a chatbots",
+    "Crear cr321_automations con todos los triggers",
+    "Crear cr321_templates con todas las categorías",
+    "Verificar valores predeterminados",
+    "Verificar relaciones de búsqueda",
+    "Publicar todas las tablas"
+  ],
+  "consejo_pro": "Crea primero las tablas sin relaciones, luego agrega los campos de búsqueda después de que todas las tablas estén publicadas"
+}
+
+
+
+
+*Información básica:**
+```
+Nombre para mostrar: Contactos
+Nombre plural: Contactos
+Nombre: cr321_contactos
+```
+
+**Campos a crear:**
+
+| Campo | Tipo | Longitud/Relación | ¿Obligatorio? | Descripción |
+|-------|------|-------------------|---------------|-------------|
+| cr321_idcontacto | Número entero | - | ✅ Sí | ID consecutivo del ticket |
+| cr321_fromnombre | Texto | 100 | ✅ Sí | Nombre del contacto |
+| cr321_telefono | Texto | 20 | ✅ Sí | Teléfono del contacto |
+| cr321_empresa | Texto | 200 | ❌ No | Empresa del contacto |
+| cr321_descripcion | Texto multilínea | 2000 | ❌ No | Descripción del problema |
+| cr321_tipo | Conjunto de opciones | - | ✅ Sí | Ver opciones abajo |
+| cr321_estado | Número entero | - | ✅ Sí | Estado actual |
+| cr321_fechacreacion | Fecha y hora | - | ✅ Sí | Fecha de creación |
+| cr321_fechaactualizacion | Fecha y hora | ✅ Sí | Fecha de actualización |
+
+*Información básica:**
+```
+Nombre para mostrar: Cuentas de WhatsApp
+Nombre plural: CuentasWhatsApp
+Nombre: cr321_cuentaswhatsapp
+```
+
+**Campos a crear:**
+
+| Campo | Tipo | Longitud/Relación | ¿Obligatorio? | Descripción |
+|-------|------|-------------------|---------------|-------------|
+| cr321_idcuentaswhatsapp | Número entero | - | ✅ Sí | ID consecutivo del cuentaswhatsapp |
+| cr321_fromnombre | Texto | 100 | ✅ Sí | Nombre del cuentaswhatsapp |
+| cr321_telefono | Texto | 20 | ✅ Sí | Teléfono del cuentaswhatsapp |
+| cr321_estado | Número entero | - | ✅ Sí | Estado actual |
+| cr321_fechacreacion | Fecha y hora | - | ✅ Sí | Fecha de creación |
+| cr321_fechaactualizacion | Fecha y hora | ✅ Sí | Fecha de actualización |

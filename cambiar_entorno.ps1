@@ -56,7 +56,7 @@ if (-not $Entorno) {
 }
 
 Write-Host ""
-Write-Host "🔄 Cambiando entorno a: $Entorno" -ForegroundColor Cyan
+Write-Host "[*] Cambiando entorno a: $Entorno" -ForegroundColor Cyan
 
 # Establecer variable de entorno del sistema (persiste entre sesiones)
 [System.Environment]::SetEnvironmentVariable("ENVIRONMENT", $Entorno, [System.EnvironmentVariableTarget]::User)
@@ -67,7 +67,7 @@ $env:ENVIRONMENT = $Entorno
 # Guardar en archivo de estado para referencia rápida
 $Entorno | Out-File -FilePath "$PSScriptRoot\.env_state" -Encoding UTF8 -NoNewline
 
-Write-Host "✅ Entorno configurado: $Entorno" -ForegroundColor Green
+Write-Host "[OK] Entorno configurado: $Entorno" -ForegroundColor Green
 Write-Host ""
-Write-Host "🔄 Reinicia la aplicación para aplicar los cambios" -ForegroundColor Yellow
+Write-Host "[AVISO] Reinicia la aplicación para aplicar los cambios" -ForegroundColor Yellow
 Write-Host "   Ejecuta: .\iniciar.ps1" -ForegroundColor Gray

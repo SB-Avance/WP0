@@ -9,7 +9,7 @@ param(
 
 # Si se especifica entorno como parámetro, cambiar antes de iniciar
 if ($Entorno) {
-    Write-Host "🔄 Configurando entorno: $Entorno" -ForegroundColor Yellow
+    Write-Host "[*] Configurando entorno: $Entorno" -ForegroundColor Yellow
     $env:ENVIRONMENT = $Entorno
 }
 
@@ -55,7 +55,7 @@ Write-Host ""
 Write-Host "[Tip] Cambia de entorno con: .\cambiar_entorno.ps1" -ForegroundColor Gray
 Write-Host ""
 
-Get-Process python* -ErrorAction SilentlyContinue | Where-Object {$_.Path -like "*CLAUDE-1*"} | Stop-Process -Force
+Get-Process python* -ErrorAction SilentlyContinue | Where-Object {$_.Path -like "*BIN*"} | Stop-Process -Force
 
 # Iniciar frontend
-& python C:\VS\CLAUDE-1\mobile\main.py
+& python "$PSScriptRoot\mobile\main.py"

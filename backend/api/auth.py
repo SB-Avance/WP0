@@ -46,7 +46,15 @@ def login():
                 'rol': user.get('cr321_rol'),
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=12)
             }, SECRET_KEY, algorithm="HS256")
-            return jsonify({'token': token, 'user': {'nombre': user.get('cr321_nombre'), 'correo': correo, 'rol': user.get('cr321_rol')}})
+            return jsonify({
+                'token': token, 
+                'user': {
+                    'id': user.get('cr321_usuariosid'),  # ID del usuario
+                    'nombre': user.get('cr321_nombre'), 
+                    'correo': correo, 
+                    'rol': user.get('cr321_rol')
+                }
+            })
         else:
             print("[LOGIN] Clave incorrecta")
             return jsonify({'message': 'Credenciales incorrectas'}), 401

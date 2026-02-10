@@ -1,18 +1,555 @@
 """
 Webhook para recibir notificaciones de WhatsApp y almacenar mensajes en Dataverse
+Implementa sistema de menú interactivo dinámico cargado desde cr321_grup
 """
 from flask import Blueprint, request, jsonify
-from goot import save_incoming_message
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from goot import save_incoming_message, get_token, DATAVERSE_URL, PHONE_NUMBER_ID, ACCESS_TOKEN
+import requests
+from datetime import datetime, timezone
 
 bp_webhook = Blueprint('webhook', __name__)
 
+# Estado de conversaciones (en memoria - considerar usar Redis para producción)
+conversation_states = {}
+
+# Cache del menú (se recarga periódicamente)
+MENU_CACHE = {
+    "menu": {},
+    "last_update": None
+}
+
+
+def crear_contacto_automatico(telefono, nombre=None):
+    """
+    Crear o obtener contacto automáticamente desde mensaje de WhatsApp
+    Retorna el ID del contacto (existente o creado)
+    """
+    token = get_token()
+    if not token:
+        print("[CONTACTO] No se pudo obtener token")
+        return None
+    
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'OData-MaxVersion': '4.0',
+        'OData-Version': '4.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+    
+    try:
+        # 1. Verificar si ya existe contacto con ese teléfono
+        url_buscar = f"{DATAVERSE_URL}/api/data/v9.2/cr321_contactos"
+        params = {
+            "$filter": f"cr321_telefono eq '{telefono}'",
+            "$select": "cr321_contactoid,cr321_fromnombre,cr321_telefono"
+        }
+        
+        response = requests.get(url_buscar, params=params, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            contactos = response.json().get("value", [])
+            if contactos:
+                print(f"[CONTACTO] Contacto existente: {contactos[0]['cr321_contactoid']}")
+                return contactos[0]['cr321_contactoid']
+        
+        # 2. Crear nuevo contacto
+        nombre_limpio = nombre.strip() if nombre else f"Contacto {telefono}"
+        
+        url_crear = f"{DATAVERSE_URL}/api/data/v9.2/cr321_contactos"
+        payload = {
+            "cr321_fromnombre": nombre_limpio,
+            "cr321_telefono": telefono,
+            "cr321_descripcion": "Contacto creado automáticamente desde WhatsApp",
+            "cr321_fechacreacion": datetime.now(timezone.utc).isoformat()
+        }
+        
+        response = requests.post(url_crear, json=payload, headers=headers, timeout=10)
+        
+        if response.status_code == 204:
+            # Obtener ID del contacto creado
+            contacto_url = response.headers.get('OData-EntityId')
+            if contacto_url:
+                contacto_id = contacto_url.split('(')[1].split(')')[0]
+                print(f"[CONTACTO] Nuevo contacto creado: {contacto_id}")
+                return contacto_id
+            else:
+                # Buscar el contacto recién creado
+                response2 = requests.get(url_buscar, params=params, headers=headers, timeout=10)
+                if response2.status_code == 200:
+                    contactos = response2.json().get("value", [])
+                    if contactos:
+                        return contactos[0]['cr321_contactoid']
+        else:
+            print(f"[CONTACTO] Error al crear: {response.status_code}")
+            return None
+            
+    except Exception as e:
+        print(f"[CONTACTO] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def load_menu_from_dataverse():
+    """
+    Carga el menú dinámicamente desde cr321_grup tipo "A"
+    Retorna diccionario con opciones del menú
+    """
+    token = get_token()
+    if not token:
+        print("[WEBHOOK] No se pudo obtener token para cargar menú")
+        return get_default_menu()
+    
+    try:
+        # Consultar grupos tipo A (462410000)
+        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_grups"
+        url += "?$select=cr321_grupoid,cr321_idgrupo,cr321_nombre,cr321_descripcion"
+        url += "&$filter=cr321_tipo eq 462410000"
+        url += "&$orderby=cr321_idgrupo asc"
+        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json"
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            grupos = data.get("value", [])
+            
+            if not grupos:
+                print("[WEBHOOK] No se encontraron grupos tipo A, usando menú por defecto")
+                return get_default_menu()
+            
+            # Construir menú dinámico
+            menu_opciones = {}
+            for idx, grupo in enumerate(grupos, 1):
+                nombre = grupo.get("cr321_nombre", f"Opción {idx}")
+                descripcion = grupo.get("cr321_descripcion", "")
+                
+                # Mapear nombres a tipos de flujo
+                tipo = map_nombre_to_tipo(nombre)
+                preguntas = get_preguntas_for_tipo(tipo)
+                mensajes = get_mensajes_for_tipo(tipo)
+                
+                menu_opciones[str(idx)] = {
+                    "nombre": nombre,
+                    "tipo": tipo,
+                    "descripcion": descripcion,
+                    "preguntas": preguntas,
+                    "mensajes": mensajes,
+                    "grupo_id": grupo.get("cr321_grupoid")
+                }
+            
+            print(f"[WEBHOOK] Menú cargado: {len(menu_opciones)} opciones")
+            return menu_opciones
+        else:
+            print(f"[WEBHOOK] Error al cargar grupos: {response.status_code}")
+            return get_default_menu()
+    
+    except Exception as e:
+        print(f"[WEBHOOK] Error al cargar menú desde Dataverse: {e}")
+        return get_default_menu()
+
+
+def get_default_menu():
+    """Menú por defecto en caso de error al cargar desde Dataverse"""
+    return {
+        "1": {
+            "nombre": "Solicitud Ticket",
+            "tipo": "soporte",
+            "preguntas": ["nombre", "empresa", "descripcion"],
+            "mensajes": {
+                "nombre": "Por favor, indique su nombre completo:",
+                "empresa": "¿De qué empresa nos contacta?",
+                "descripcion": "Describa su solicitud de soporte:"
+            }
+        },
+        "2": {
+            "nombre": "Cotizaciones",
+            "tipo": "cotizacion",
+            "preguntas": ["nombre", "empresa", "descripcion"],
+            "mensajes": {
+                "nombre": "Por favor, indique su nombre completo:",
+                "empresa": "¿De qué empresa nos contacta?",
+                "descripcion": "Describa el producto, marca y modelo si lo tiene:"
+            }
+        },
+        "3": {
+            "nombre": "Información",
+            "tipo": "informacion",
+            "preguntas": [],
+            "respuesta": "Gracias por contactarnos. Visite nuestro sitio web para más información."
+        },
+        "4": {
+            "nombre": "Solicitar atención de agente",
+            "tipo": "atencion_agente",
+            "preguntas": ["nombre"],
+            "mensajes": {
+                "nombre": "Por favor, indique su nombre para conectarlo con un agente:"
+            }
+        }
+    }
+
+
+def map_nombre_to_tipo(nombre):
+    """Mapea nombre de grupo a tipo de flujo"""
+    nombre_lower = nombre.lower()
+    if "ticket" in nombre_lower or "soporte" in nombre_lower or "solicitud" in nombre_lower:
+        return "soporte"
+    elif "cotiz" in nombre_lower:
+        return "cotizacion"
+    elif "informacion" in nombre_lower or "info" in nombre_lower:
+        return "informacion"
+    elif "agente" in nombre_lower or "atencion" in nombre_lower or "atención" in nombre_lower:
+        return "atencion_agente"
+    else:
+        return "general"
+
+
+def get_preguntas_for_tipo(tipo):
+    """Retorna preguntas según el tipo de flujo"""
+    if tipo in ["soporte", "cotizacion"]:
+        return ["nombre", "empresa", "descripcion"]
+    elif tipo == "atencion_agente":
+        return ["nombre"]
+    else:
+        return []
+
+
+def get_mensajes_for_tipo(tipo):
+    """Retorna mensajes según el tipo de flujo"""
+    base_mensajes = {
+        "nombre": "Por favor, indique su nombre completo:",
+        "empresa": "¿De qué empresa nos contacta?",
+    }
+    
+    if tipo == "soporte":
+        base_mensajes["descripcion"] = "Describa su solicitud de soporte:"
+    elif tipo == "cotizacion":
+        base_mensajes["descripcion"] = "Describa el producto, marca y modelo si lo tiene:"
+    elif tipo == "informacion":
+        base_mensajes["respuesta"] = "Gracias por contactarnos. Visite nuestro sitio web para más información."
+    elif tipo == "atencion_agente":
+        # Solo nombre
+        pass
+    
+    return base_mensajes
+
+
+def get_current_menu():
+    """Obtiene el menú actual (desde cache o recarga si es necesario)"""
+    now = datetime.now(timezone.utc)
+    
+    # Recargar menú cada 5 minutos
+    if (MENU_CACHE["last_update"] is None or 
+        (now - MENU_CACHE["last_update"]).total_seconds() > 300):
+        
+        MENU_CACHE["menu"] = load_menu_from_dataverse()
+        MENU_CACHE["last_update"] = now
+    
+    return MENU_CACHE["menu"]
+
+
+def send_whatsapp_message(to_phone, message_text):
+    """Enviar mensaje de WhatsApp"""
+    try:
+        url = f"https://graph.facebook.com/v21.0/{PHONE_NUMBER_ID}/messages"
+        headers = {
+            "Authorization": f"Bearer {ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": to_phone,
+            "type": "text",
+            "text": {"body": message_text}
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error enviando mensaje WhatsApp: {e}")
+        return False
+
+
+def create_ticket_from_conversation(phone, conversation_data):
+    """Crear ticket o cotización desde una conversación completada"""
+    token = get_token()
+    if not token:
+        print("No se pudo obtener token para crear ticket/cotización")
+        return False
+    
+    tipo = conversation_data.get("tipo", "soporte")
+    nombre = conversation_data.get("nombre", "")
+    empresa = conversation_data.get("empresa", "")
+    descripcion = conversation_data.get("descripcion", "")
+    
+    # Si es cotización, crear en cr321_cotizacions
+    if tipo == "cotizacion":
+        return create_cotizacion_record(phone, nombre, empresa, descripcion, token)
+    else:
+        # Para soporte y otros, crear ticket normal
+        return create_ticket_record(phone, nombre, empresa, descripcion, tipo, token)
+
+
+def create_cotizacion_record(phone, nombre, empresa, descripcion, token):
+    """Crear registro en tabla cr321_cotizacion"""
+    try:
+        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_cotizacions"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        
+        now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        
+        payload = {
+            "cr321_nombre": f"Cotización de {nombre}",
+            "cr321_cliente": f"{nombre} - {empresa}" if empresa else nombre,
+            "cr321_descripcion": descripcion,
+            "cr321_fecha": now
+        }
+        
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code in [200, 201, 204]:
+            print(f"Cotización creada exitosamente para {nombre}")
+            return True
+        else:
+            print(f"Error creando cotización: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"Error en create_cotizacion_record: {e}")
+        return False
+
+
+def create_ticket_record(phone, nombre, empresa, descripcion, tipo, token):
+    """Crear registro de ticket en cr321_ticket"""
+    # Mapeo de tipos
+    tipo_map = {
+        "soporte": 462410000,
+        "cotizacion": 462410001,
+        "informacion": 462410002,
+        "atencion_agente": 462410003
+    }
+    
+    # Obtener siguiente ID de ticket
+    try:
+        search_url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_ticketses?$select=cr321_idticket&$orderby=cr321_idticket desc&$top=1"
+        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        response = requests.get(search_url, headers=headers)
+        
+        next_id = 1
+        if response.status_code == 200:
+            data = response.json()
+            tickets = data.get("value", [])
+            if tickets:
+                next_id = tickets[0].get("cr321_idticket", 0) + 1
+        
+        # Crear el ticket
+        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_ticketses"
+        headers["Content-Type"] = "application/json"
+        
+        now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        
+        payload = {
+            "cr321_idticket": next_id,
+            "cr321_fromnombre": nombre,
+            "cr321_telefono": phone,
+            "cr321_empresa": empresa,
+            "cr321_descripcion": descripcion,
+            "cr321_tipo": tipo_map.get(tipo, 462410000),
+            "cr321_fechacreacion": now,
+            "cr321_fechaactualizacion": now
+        }
+        
+        # Nota: cr321_estadoId es lookup opcional, se puede asignar después manualmente
+        # Si se requiere estado por defecto, buscar el GUID del estado "Nuevo" y usar:
+        # payload["cr321_estadoId@odata.bind"] = f"/cr321_estados({estado_guid})"
+        
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 204:
+            print(f"Ticket #{next_id} creado exitosamente")
+            return next_id
+        else:
+            print(f"Error creando ticket: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"Error en create_ticket_record: {e}")
+        return False
+
+
+def get_menu_text():
+    """Genera el texto del menú principal desde grupos dinámicos"""
+    menu_opciones = get_current_menu()
+    menu = "¡Bienvenido! Por favor seleccione una opción:\n\n"
+    for key, opcion in menu_opciones.items():
+        menu += f"{key}. {opcion['nombre']}\n"
+    return menu
+
+
+def process_menu_response(phone, message_text):
+    """Procesa la respuesta del usuario en el menú"""
+    menu_opciones = get_current_menu()
+    
+    # Verificar si el usuario está en una conversación activa
+    if phone in conversation_states:
+        state = conversation_states[phone]
+        opcion_id = state.get("opcion")
+        
+        if opcion_id not in menu_opciones:
+            del conversation_states[phone]
+            return get_menu_text()
+        
+        opcion = menu_opciones[opcion_id]
+        preguntas = opcion.get("preguntas", [])
+        step = state.get("step", 0)
+        
+        # Si hay preguntas pendientes
+        if step < len(preguntas):
+            pregunta_actual = preguntas[step]
+            
+            # Guardar respuesta anterior (si no es el primer paso)
+            if step > 0:
+                pregunta_anterior = preguntas[step - 1]
+                state["data"][pregunta_anterior] = message_text
+            
+            # Si es el último paso, guardar y crear ticket
+            if step == len(preguntas) - 1:
+                state["data"][pregunta_actual] = message_text
+                
+                # Crear ticket con los datos recopilados
+                ticket_data = {
+                    "tipo": opcion.get("tipo"),
+                    **state["data"]
+                }
+                ticket_id = create_ticket_from_conversation(phone, ticket_data)
+                
+                # Limpiar estado
+                del conversation_states[phone]
+                
+                if ticket_id:
+                    return f"¡Gracias! Su solicitud ha sido registrada con el ticket #{ticket_id}. Nos pondremos en contacto pronto.\n\n{get_menu_text()}"
+                else:
+                    return f"Lo sentimos, hubo un error al procesar su solicitud. Por favor intente nuevamente.\n\n{get_menu_text()}"
+            else:
+                # Avanzar al siguiente paso
+                state["step"] = step + 1
+                siguiente_pregunta = preguntas[state["step"]]
+                return opcion["mensajes"].get(siguiente_pregunta, "Por favor proporcione la información:")
+        
+    # Si no hay conversación activa, verificar si es una opción del menú
+    if message_text.strip() in menu_opciones:
+        opcion_id = message_text.strip()
+        opcion = menu_opciones[opcion_id]
+        
+        # Si la opción no tiene preguntas, responder directamente
+        if not opcion.get("preguntas"):
+            respuesta = opcion.get("respuesta", opcion.get("descripcion", "Opción no disponible"))
+            return f"{respuesta}\n\n{get_menu_text()}"
+        
+        # Iniciar conversación
+        conversation_states[phone] = {
+            "opcion": opcion_id,
+            "step": 0,
+            "data": {},
+            "grupo_id": opcion.get("grupo_id")
+        }
+        
+        primera_pregunta = opcion["preguntas"][0]
+        return opcion["mensajes"].get(primera_pregunta, "Por favor proporcione la información:")
+    
+    # Si no es una opción válida, mostrar menú
+    return get_menu_text()
+
+
+@bp_webhook.route('/webhook', methods=['GET'])
+def verify_webhook():
+    """Verificación del webhook de WhatsApp"""
+    mode = request.args.get('hub.mode')
+    token = request.args.get('hub.verify_token')
+    challenge = request.args.get('hub.challenge')
+    
+    from goot import VERIFY_TOKEN
+    
+    if mode == 'subscribe' and token == VERIFY_TOKEN:
+        print("Webhook verificado exitosamente")
+        return challenge, 200
+    else:
+        return jsonify({'error': 'Token de verificación inválido'}), 403
+
+
 @bp_webhook.route('/webhook', methods=['POST'])
 def whatsapp_webhook():
+    """Procesar mensajes entrantes de WhatsApp"""
     data = request.get_json()
-    # Aquí deberías procesar el payload de WhatsApp y guardar en Dataverse
-    # Ejemplo simplificado:
+    
     try:
-        save_incoming_message(data)
-        return jsonify({'message': 'Mensaje recibido'}), 200
+        # Extraer información del mensaje
+        if data and 'entry' in data:
+            for entry in data['entry']:
+                for change in entry.get('changes', []):
+                    value = change.get('value', {})
+                    messages = value.get('messages', [])
+                    
+                    for message in messages:
+                        phone = message.get('from')
+                        message_type = message.get('type')
+                        
+                        # Solo procesar mensajes de texto
+                        if message_type == 'text':
+                            text_body = message.get('text', {}).get('body', '')
+                            
+                            # Obtener nombre del perfil si está disponible
+                            contacts = value.get('contacts', [])
+                            nombre = None
+                            if contacts:
+                                nombre = contacts[0].get('profile', {}).get('name')
+                            
+                            # Procesar respuesta del menú
+                            response_text = process_menu_response(phone, text_body)
+                            
+                            # Enviar respuesta
+                            send_whatsapp_message(phone, response_text)
+                            
+                            # 🚀 NUEVO: Guardar mensaje con contacto asociado automáticamente
+                            try:
+                                from api.webhook_enhanced import procesar_mensaje_whatsapp_mejorado
+                                
+                                exito, contacto_id, _ = procesar_mensaje_whatsapp_mejorado(
+                                    data,
+                                    phone,
+                                    text_body,
+                                    nombre
+                                )
+                                
+                                if exito:
+                                    print(f"✅ Mensaje y contacto procesados correctamente: {contacto_id}")
+                                else:
+                                    print(f"⚠️ Error al procesar mensaje/contacto para {phone}")
+                                    # Fallback al método antiguo
+                                    save_incoming_message(data)
+                                    crear_contacto_automatico(phone, nombre)
+                            except Exception as e:
+                                print(f"❌ Error en webhook mejorado: {e}")
+                                print(f"⚠️ Usando método fallback...")
+                                # Fallback al método antiguo si hay error
+                                save_incoming_message(data)
+                                try:
+                                    contacto_id = crear_contacto_automatico(phone, nombre)
+                                    if contacto_id:
+                                        print(f"✅ Contacto procesado (fallback): {contacto_id}")
+                                except Exception as e2:
+                                    print(f"❌ Error en fallback: {e2}")
+        
+        return jsonify({'message': 'Mensaje procesado'}), 200
+    
     except Exception as e:
+        print(f"Error en webhook: {e}")
         return jsonify({'error': str(e)}), 500
+

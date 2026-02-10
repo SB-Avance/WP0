@@ -6,6 +6,7 @@ from components.chats import ChatsView
 from components.chat_detail import ChatDetailView
 from components.users import UsersView
 from components.settings import SettingsView
+from components.chatbots import ChatbotsView
 from assets import styles
 import requests
 from datetime import datetime
@@ -24,6 +25,39 @@ class WhatsAppAPI:
     
     def set_token(self, token):
         self.token = token
+    
+    def get_user_groups(self, user_id):
+        """Obtener grupos permitidos para un usuario específico"""
+        try:
+            url = f"{self.base_url}/api/usuario-grupos?usuario_id={user_id}"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] GET {url}")
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("grupos", [])
+            else:
+                return []
+        except Exception as e:
+            print(f"Error al obtener grupos del usuario: {e}")
+            return []
+    
+    def get_all_groups(self):
+        """Obtener todos los grupos disponibles"""
+        try:
+            url = f"{self.base_url}/api/grupos"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] GET {url}")
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                # Extraer solo los nombres de los grupos
+                return [g.get("nombre", "") for g in data.get("grupos", [])]
+            else:
+                return []
+        except Exception as e:
+            print(f"Error al obtener todos los grupos: {e}")
+            return []
     
     def get_conversations(self, group_filter=None):
         try:
@@ -158,8 +192,8 @@ def main(page: ft.Page):
     page.window.max_height = 812
 
     api = WhatsAppAPI(API_BASE_URL)
-    user = {"nombre": None, "rol": None, "correo": None, "token": None}
-    current_view = {"value": "login"}  # login, dashboard, chats, users, settings, chat_detail
+    user = {"id": None, "nombre": None, "rol": None, "correo": None, "token": None}
+    current_view = {"value": "login"}  # login, dashboard, chats, chatbots, users, settings, chat_detail
     conversations = []
     users_list = []
     selected_conversation = {"value": None}
@@ -179,6 +213,7 @@ def main(page: ft.Page):
             user_data = data.get('user', {})
             token = data.get('token')
             user.update({
+                'id': user_data.get('id'),
                 'nombre': user_data.get('nombre'),
                 'correo': user_data.get('correo'),
                 'rol': user_data.get('rol'),
@@ -201,14 +236,17 @@ def main(page: ft.Page):
         if idx == 0:
             current_view["value"] = "chats"
         elif idx == 1:
-            current_view["value"] = "users"
+            current_view["value"] = "chatbots"
         elif idx == 2:
+            current_view["value"] = "users"
+        elif idx == 3:
             current_view["value"] = "settings"
         render()
 
     def on_logout(e=None):
         # Limpiar datos del usuario
         user.update({
+            'id': None,
             'nombre': None,
             'correo': None,
             'rol': None,
@@ -290,16 +328,45 @@ def main(page: ft.Page):
             page.add(ChatDetailView(conv, chat_messages, back_to_chats, send_message_to_chat, refresh_chat_messages, current_group["value"]))
         else:
             # Layout con sidebar siempre a la izquierda (modo iPhone)
-            sidebar = SidebarView(on_nav_change, on_logout, user.get('nombre'))
+            # Determinar grupos disponibles según rol del usuario
+            if user.get('rol') == 'administrador':
+                # Administrador ve todos los grupos
+                available_groups = api.get_all_groups()
+                if "TODOS" not in available_groups:
+                    available_groups.insert(0, "TODOS")
+                print(f"[PERMISOS] Administrador - Todos los grupos disponibles: {available_groups}")
+            else:
+                # Usuario normal solo ve sus grupos asignados
+                user_id = user.get('id')  # Necesitamos obtener el ID del usuario
+                if user_id:
+                    user_groups = api.get_user_groups(user_id)
+                    available_groups = [g.get("nombre", "") for g in user_groups]
+                else:
+                    # Si no hay ID, usar grupos de las conversaciones
+                    _, available_groups = api.get_conversations(current_group["value"])
+                print(f"[PERMISOS] Usuario - Grupos asignados: {available_groups}")
+            
+            sidebar = SidebarView(
+                on_nav_change, 
+                on_logout, 
+                user.get('nombre'),
+                available_groups,
+                on_group_change
+            )
+            
             content = None
+            
             if current_view["value"] == "dashboard":
-                # Obtener grupos disponibles del backend
-                _, available_groups = api.get_conversations(current_group["value"])
                 content = DashboardView(None, on_group_change, current_group["value"], available_groups)
             elif current_view["value"] == "chats":
                 # Obtener conversaciones filtradas por grupo
-                conversations, available_groups = api.get_conversations(current_group["value"])
+                conversations, _ = api.get_conversations(current_group["value"])
+                # Filtrar conversaciones según grupos permitidos
+                if user.get('rol') != 'administrador' and available_groups:
+                    conversations = [c for c in conversations if c.get("group") in available_groups]
                 content = ChatsView(conversations, open_chat, current_group["value"], available_groups, on_group_change)
+            elif current_view["value"] == "chatbots":
+                content = ChatbotsView(back_to_dashboard, API_BASE_URL, user.get('token', ''))
             elif current_view["value"] == "users":
                 # Obtener lista de usuarios real del backend
                 nonlocal users_list

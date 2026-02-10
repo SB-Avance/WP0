@@ -1,0 +1,314 @@
+{
+  "guia": {
+    "titulo": "Guía Visual: Crear Tablas en Dataverse",
+    "objetivo": "Crear 4 tablas nuevas en Microsoft Dataverse para el sistema de chatbot",
+    "tiempo_estimado": "20-30 minutos",
+    "url_acceso": "https://make.powerapps.com"
+  },
+  "tablas": [
+    {
+      "numero": 1,
+      "nombre_sistema": "cr321_grupos",
+      "nombre_mostrar": "Grupos",
+      "nombre_plural": "Grupos",
+      "descripcion": "Gestión de grupos para organización de usuarios",
+      "campos": [
+        {
+          "nombre": "cr321_idgrupo",
+          "tipo": "Número entero",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "ID consecutivo del grupo"
+        },
+        {
+          "nombre": "cr321_nombre",
+          "tipo": "Texto",
+          "longitud": 100,
+          "obligatorio": true,
+          "descripcion": "Nombre del grupo"
+        },
+        {
+          "nombre": "cr321_tipo",
+          "tipo": "Conjunto de opciones",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Tipo de grupo",
+          "opciones": [
+            {
+              "etiqueta": "Tipo A",
+              "valor": 462410000
+            },
+            {
+              "etiqueta": "Tipo B",
+              "valor": 462410001
+            },
+            {
+              "etiqueta": "Tipo C",
+              "valor": 462410002
+            }
+          ]
+        },
+        {
+          "nombre": "cr321_descripcion",
+          "tipo": "Texto",
+          "longitud": 500,
+          "obligatorio": false,
+          "descripcion": "Descripción del grupo"
+        }
+      ]
+    },
+    {
+      "numero": 2,
+      "nombre_sistema": "cr321_estados",
+      "nombre_mostrar": "Estados",
+      "nombre_plural": "Estados",
+      "descripcion": "Estados disponibles para tickets y conversaciones",
+      "campos": [
+        {
+          "nombre": "cr321_idestado",
+          "tipo": "Número entero",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "ID consecutivo del estado"
+        },
+        {
+          "nombre": "cr321_nombre",
+          "tipo": "Texto",
+          "longitud": 100,
+          "obligatorio": true,
+          "descripcion": "Nombre del estado"
+        },
+        {
+          "nombre": "cr321_descripcion",
+          "tipo": "Texto",
+          "longitud": 500,
+          "obligatorio": false,
+          "descripcion": "Descripción del estado"
+        }
+      ]
+    },
+    {
+      "numero": 3,
+      "nombre_sistema": "cr321_tickets",
+      "nombre_mostrar": "Tickets",
+      "nombre_plural": "Tickets",
+      "descripcion": "Sistema de tickets para gestión de solicitudes",
+      "campos": [
+        {
+          "nombre": "cr321_idticket",
+          "tipo": "Número entero",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "ID consecutivo del ticket"
+        },
+        {
+          "nombre": "cr321_fromnombre",
+          "tipo": "Texto",
+          "longitud": 100,
+          "obligatorio": true,
+          "descripcion": "Nombre del contacto"
+        },
+        {
+          "nombre": "cr321_telefono",
+          "tipo": "Texto",
+          "longitud": 20,
+          "obligatorio": true,
+          "descripcion": "Teléfono del contacto"
+        },
+        {
+          "nombre": "cr321_empresa",
+          "tipo": "Texto",
+          "longitud": 200,
+          "obligatorio": false,
+          "descripcion": "Empresa del contacto"
+        },
+        {
+          "nombre": "cr321_descripcion",
+          "tipo": "Texto multilínea",
+          "longitud": 2000,
+          "obligatorio": false,
+          "descripcion": "Descripción del problema"
+        },
+        {
+          "nombre": "cr321_tipo",
+          "tipo": "Conjunto de opciones",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Tipo de ticket",
+          "opciones": [
+            {
+              "etiqueta": "Soporte",
+              "valor": 462410000
+            },
+            {
+              "etiqueta": "Cotización",
+              "valor": 462410001
+            },
+            {
+              "etiqueta": "Información",
+              "valor": 462410002
+            },
+            {
+              "etiqueta": "Atención Agente",
+              "valor": 462410003
+            }
+          ]
+        },
+        {
+          "nombre": "cr321_estado",
+          "tipo": "Número entero",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Estado actual"
+        },
+        {
+          "nombre": "cr321_grupoid",
+          "tipo": "Búsqueda",
+          "longitud": null,
+          "obligatorio": false,
+          "descripcion": "Grupo asignado",
+          "relacion": {
+            "tabla_relacionada": "cr321_grupos",
+            "tipo_relacion": "Muchos a uno (N:1)"
+          }
+        },
+        {
+          "nombre": "cr321_fechacreacion",
+          "tipo": "Fecha y hora",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Fecha de creación"
+        },
+        {
+          "nombre": "cr321_fechaactualizacion",
+          "tipo": "Fecha y hora",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Fecha de actualización"
+        }
+      ]
+    },
+    {
+      "numero": 4,
+      "nombre_sistema": "cr321_usuario_grupos",
+      "nombre_mostrar": "Usuario Grupos",
+      "nombre_plural": "Usuario Grupos",
+      "descripcion": "Relación entre usuarios y grupos",
+      "campos": [
+        {
+          "nombre": "cr321_usuarioid",
+          "tipo": "Búsqueda",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Usuario asignado",
+          "relacion": {
+            "tabla_relacionada": "cr321_usuarios",
+            "tipo_relacion": "Muchos a uno (N:1)"
+          }
+        },
+        {
+          "nombre": "cr321_grupoid",
+          "tipo": "Búsqueda",
+          "longitud": null,
+          "obligatorio": true,
+          "descripcion": "Grupo asignado",
+          "relacion": {
+            "tabla_relacionada": "cr321_grupos",
+            "tipo_relacion": "Muchos a uno (N:1)"
+          }
+        }
+      ]
+    }
+  ],
+  "pasos": [
+    {
+      "numero": 1,
+      "titulo": "Acceder a Power Apps",
+      "acciones": [
+        "Ir a: https://make.powerapps.com",
+        "Iniciar sesión con tu cuenta",
+        "Seleccionar tu entorno (arriba a la derecha)"
+      ]
+    },
+    {
+      "numero": 2,
+      "titulo": "Crear las Tablas",
+      "acciones": [
+        "Navegar a: Tablas → Nueva tabla → Crear tabla",
+        "Completar información básica de cada tabla",
+        "Agregar campos según especificaciones",
+        "Guardar y publicar cada tabla"
+      ]
+    },
+    {
+      "numero": 3,
+      "titulo": "Verificar",
+      "acciones": [
+        "Verificar que cr321_grupos está publicada",
+        "Verificar que cr321_estados está publicada",
+        "Verificar que cr321_tickets está publicada",
+        "Verificar que cr321_usuario_grupos está publicada"
+      ]
+    },
+    {
+      "numero": 4,
+      "titulo": "Inicializar Datos",
+      "acciones": [
+        "Ejecutar: python init_dataverse.py",
+        "Verificar creación de 4 grupos tipo A",
+        "Verificar creación de 6 estados de tickets"
+      ]
+    }
+  ],
+  "instrucciones_campos": {
+    "texto": [
+      "En la tabla, clic en 'Agregar campo'",
+      "Nombre para mostrar: [nombre del campo]",
+      "Tipo de datos: Texto",
+      "Longitud máxima: [según tabla]",
+      "¿Obligatorio?: [según tabla]",
+      "Guardar"
+    ],
+    "conjunto_opciones": [
+      "En la tabla, clic en 'Agregar campo'",
+      "Nombre para mostrar: [nombre del campo]",
+      "Tipo de datos: Conjunto de opciones",
+      "Conjunto de opciones: Nuevo conjunto de opciones",
+      "Agregar cada opción con su etiqueta y valor",
+      "Guardar"
+    ],
+    "busqueda": [
+      "En la tabla, clic en 'Agregar campo'",
+      "Nombre para mostrar: [nombre del campo]",
+      "Tipo de datos: Búsqueda",
+      "Tabla relacionada: [seleccionar tabla]",
+      "Tipo de relación: Muchos a uno (N:1)",
+      "Guardar"
+    ]
+  },
+  "solucion_problemas": [
+    {
+      "problema": "No puedo crear campos con prefijo cr321_",
+      "solucion": "Asegúrate de que tu editor de soluciones tiene el prefijo 'cr321' configurado"
+    },
+    {
+      "problema": "No encuentro la opción 'Conjunto de opciones'",
+      "solucion": "Busca 'Choice' en inglés, es el mismo tipo de campo"
+    },
+    {
+      "problema": "Error al crear relación de búsqueda",
+      "solucion": "Asegúrate de que la tabla relacionada ya existe y está publicada"
+    }
+  ],
+  "checklist_final": [
+    "Las 4 tablas están creadas",
+    "Todos los campos están agregados",
+    "Los conjuntos de opciones tienen los valores correctos (462410000, etc.)",
+    "Las relaciones de búsqueda están configuradas",
+    "Todas las tablas están publicadas"
+  ],
+  "tips": [
+    "Este proceso toma aproximadamente 20-30 minutos la primera vez",
+    "Puedes usar la opción 'Importar desde Excel' para crear múltiples campos a la vez"
+  ]
+}

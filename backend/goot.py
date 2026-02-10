@@ -97,22 +97,22 @@ def create_user(nombre, correo, rol, clave):
     rol_map = {"administrador": 462410001, "usuario": 462410000}
     rol_val = rol_map.get(str(rol).lower(), rol)
 
-    # Obtener el máximo cr321_id actual
+    # Obtener el máximo cr321_idusuario actual
     max_id = 0
     try:
-        url_get = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuarioses?$select=cr321_id"
+        url_get = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuarioses?$select=cr321_idusuario"
         response = requests.get(url_get, headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
         if response.status_code == 200:
             data = response.json()
             for user in data.get("value", []):
                 try:
-                    val = int(user.get("cr321_id", 0))
+                    val = int(user.get("cr321_idusuario", 0))
                     if val > max_id:
                         max_id = val
                 except Exception:
                     pass
     except Exception as e:
-        print(f"[WARN] No se pudo obtener el máximo cr321_id: {e}")
+        print(f"[WARN] No se pudo obtener el máximo cr321_idusuario: {e}")
     nuevo_id = str(max_id + 1)
 
     user_data = {
@@ -120,7 +120,7 @@ def create_user(nombre, correo, rol, clave):
         "cr321_correo": correo,
         "cr321_rol": rol_val,
         "cr321_clave": clave,
-        "cr321_id": nuevo_id
+        "cr321_idusuario": nuevo_id
     }
     try:
         response = requests.post(url, headers=headers, json=user_data)
@@ -249,11 +249,15 @@ def get_conversations_for_user(user):
     # Si es administrador, obtener todas las conversaciones
     if rol == 'administrador':
         url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$orderby=cr321_timestamp desc"
+        # Expandir categoría del chatbot si existe el campo
+        url += "&$expand=cr321_categoria_chatbot($select=cr321_nombre,cr321_tipo)"
         print(f"[DEBUG USUARIO] URL para ADMIN (sin filtro de correo)")
     else:
         # Usuarios normales solo ven sus conversaciones
         correo = user.get("cr321_correo")
         url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$filter=cr321_correo eq '{correo}'&$orderby=cr321_timestamp desc"
+        # Expandir categoría del chatbot si existe el campo
+        url += "&$expand=cr321_categoria_chatbot($select=cr321_nombre,cr321_tipo)"
         print(f"[DEBUG USUARIO] URL con filtro de correo: {correo}")
     
     headers = {
