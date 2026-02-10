@@ -1,68 +1,58 @@
-# Users component for Flet app - CRUD completo
+# WhatsApp Accounts component for Flet app
 import flet as ft
 import requests
 
-def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
-    """Vista para gestión de usuarios (solo admin)"""
+def WhatsAppAccountsView(on_back=None, api_base_url="http://localhost:5000", token=None):
+    """Vista para gestión de cuentas de WhatsApp"""
     
     # Estado local
-    users_list = []
-    selected_user = {"value": None}
+    accounts_list = []
+    selected_account = {"value": None}
     edit_mode = {"value": False}
     page_ref = {"value": None}
     
     # Campos del formulario
-    nombre_field = ft.TextField(label="Nombre Completo", width=300)
-    correo_field = ft.TextField(label="Correo Electrónico", width=300)
-    clave_field = ft.TextField(
-        label="Contraseña",
+    nombre_field = ft.TextField(label="Nombre de la Cuenta", width=300)
+    phone_field = ft.TextField(label="Número de Teléfono", width=300)
+    phone_id_field = ft.TextField(label="Phone Number ID (WhatsApp Business)", width=300)
+    access_token_field = ft.TextField(
+        label="Access Token",
         password=True,
         can_reveal_password=True,
         width=300
     )
-    rol_dropdown = ft.Dropdown(
-        label="Rol",
-        width=300,
-        options=[
-            ft.dropdown.Option(key="usuario", text="Usuario"),
-            ft.dropdown.Option(key="administrador", text="Administrador"),
-        ],
-        value="usuario"
-    )
+    activo_switch = ft.Switch(label="Activo", value=True)
     
-    def load_users():
-        """Cargar usuarios desde la API"""
+    def load_accounts():
+        """Cargar cuentas desde la API"""
         try:
-            url = f"{api_base_url}/api/users"
+            url = f"{api_base_url}/api/whatsapp-accounts"
             headers = {"Authorization": f"Bearer {token}"} if token else {}
-            print(f"[USERS] Cargando desde: {url}")
             response = requests.get(url, headers=headers, timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
-                users_list.clear()
-                users_list.extend(data.get("users", []))
-                print(f"[USERS] Cargados {len(users_list)} usuarios")
-                render_list()
+                accounts_list.clear()
+                accounts_list.extend(data.get("accounts", []))
+                print(f"[WHATSAPP_ACCOUNTS] Cargadas {len(accounts_list)} cuentas")
                 return True
             else:
-                print(f"[USERS] Error al cargar: {response.status_code}")
-                render_list()
+                print(f"[WHATSAPP_ACCOUNTS] Error al cargar: {response.status_code}")
                 return False
         except Exception as e:
-            print(f"[USERS] Excepción al cargar: {e}")
-            render_list()
+            print(f"[WHATSAPP_ACCOUNTS] Excepción al cargar: {e}")
             return False
     
-    def save_user(e):
-        """Guardar usuario (crear o actualizar)"""
+    def save_account(e):
+        """Guardar cuenta (crear o actualizar)"""
         nombre = nombre_field.value
-        correo = correo_field.value
-        clave = clave_field.value
-        rol = rol_dropdown.value
+        phone = phone_field.value
+        phone_id = phone_id_field.value
+        access_token = access_token_field.value
+        activo = activo_switch.value
         
-        if not nombre or not correo:
-            show_snackbar("Nombre y correo son requeridos")
+        if not nombre or not phone or not phone_id:
+            show_snackbar("Nombre, teléfono y Phone ID son requeridos")
             return
         
         try:
@@ -73,31 +63,27 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
             
             data = {
                 "nombre": nombre,
-                "correo": correo,
-                "rol": rol
+                "phone": phone,
+                "phone_id": phone_id,
+                "activo": activo
             }
             
-            # Solo incluir clave si se proporciona
-            if clave:
-                data["clave"] = clave
-            elif not edit_mode["value"]:
-                # Clave requerida para nuevo usuario
-                show_snackbar("La contraseña es requerida para nuevos usuarios")
-                return
+            if access_token:
+                data["access_token"] = access_token
             
-            if edit_mode["value"] and selected_user["value"]:
+            if edit_mode["value"] and selected_account["value"]:
                 # Actualizar
-                url = f"{api_base_url}/api/users/{selected_user['value']['id']}"
+                url = f"{api_base_url}/api/whatsapp-accounts/{selected_account['value']['id']}"
                 response = requests.patch(url, json=data, headers=headers, timeout=10)
             else:
                 # Crear
-                url = f"{api_base_url}/api/users"
+                url = f"{api_base_url}/api/whatsapp-accounts"
                 response = requests.post(url, json=data, headers=headers, timeout=10)
             
             if response.status_code in [200, 201]:
-                show_snackbar("Usuario guardado exitosamente")
+                show_snackbar("Cuenta guardada exitosamente")
                 cancel_edit(None)
-                load_users()
+                load_accounts()
                 render_list()
                 
                 # Actualizar la interfaz
@@ -110,17 +96,18 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
                 show_snackbar(f"Error al guardar: {response.status_code}")
         
         except Exception as ex:
-            print(f"[USERS] Error al guardar: {ex}")
+            print(f"[WHATSAPP_ACCOUNTS] Error al guardar: {ex}")
             show_snackbar(f"Error: {str(ex)}")
     
-    def edit_user(user):
-        """Editar usuario existente"""
-        selected_user["value"] = user
+    def edit_account(account):
+        """Editar cuenta existente"""
+        selected_account["value"] = account
         edit_mode["value"] = True
-        nombre_field.value = user["nombre"]
-        correo_field.value = user["correo"]
-        clave_field.value = ""  # No mostrar clave existente
-        rol_dropdown.value = user["rol"]
+        nombre_field.value = account["nombre"]
+        phone_field.value = account["phone"]
+        phone_id_field.value = account.get("phone_id", "")
+        access_token_field.value = ""  # No mostrar token por seguridad
+        activo_switch.value = account["activo"]
         
         render_form()
         
@@ -131,16 +118,16 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
             except:
                 pass
     
-    def delete_user(user):
-        """Eliminar usuario"""
+    def delete_account(account):
+        """Eliminar cuenta"""
         try:
-            url = f"{api_base_url}/api/users/{user['id']}"
+            url = f"{api_base_url}/api/whatsapp-accounts/{account['id']}"
             headers = {"Authorization": f"Bearer {token}"} if token else {}
             response = requests.delete(url, headers=headers, timeout=10)
             
             if response.status_code in [200, 204]:
-                show_snackbar("Usuario eliminado")
-                load_users()
+                show_snackbar("Cuenta eliminada")
+                load_accounts()
                 render_list()
                 
                 # Actualizar la interfaz
@@ -152,17 +139,18 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
             else:
                 show_snackbar(f"Error al eliminar: {response.status_code}")
         except Exception as ex:
-            print(f"[USERS] Error al eliminar: {ex}")
+            print(f"[WHATSAPP_ACCOUNTS] Error al eliminar: {ex}")
             show_snackbar(f"Error: {str(ex)}")
     
     def cancel_edit(e):
         """Cancelar edición"""
-        selected_user["value"] = None
+        selected_account["value"] = None
         edit_mode["value"] = False
         nombre_field.value = ""
-        correo_field.value = ""
-        clave_field.value = ""
-        rol_dropdown.value = "usuario"
+        phone_field.value = ""
+        phone_id_field.value = ""
+        access_token_field.value = ""
+        activo_switch.value = True
         render_form()
         
         # Actualizar la interfaz
@@ -174,57 +162,57 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
     
     def show_snackbar(message):
         """Mostrar mensaje temporal"""
-        print(f"[USERS] {message}")
+        print(f"[WHATSAPP_ACCOUNTS] {message}")
     
-    def new_user_click(e):
-        """Manejar clic en nuevo usuario"""
+    def new_account_click(e):
+        """Manejar clic en nueva cuenta"""
         cancel_edit(None)
     
     def render_list():
-        """Renderizar lista de usuarios"""
+        """Renderizar lista de cuentas"""
         list_container.controls.clear()
         
-        if not users_list:
+        if not accounts_list:
             list_container.controls.append(
                 ft.Container(
                     ft.Column([
                         ft.Icon(ft.icons.INFO_OUTLINE, size=50, color=ft.colors.BLUE_400),
-                        ft.Text("No hay usuarios registrados", size=16),
-                        ft.Text("Haz clic en 'Nuevo Usuario' para crear uno", size=12, color=ft.colors.GREY),
+                        ft.Text("No hay cuentas configuradas", size=16),
+                        ft.Text("Haz clic en 'Nueva Cuenta' para crear una", size=12, color=ft.colors.GREY),
                     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
                     padding=40,
                     alignment=ft.alignment.center
                 )
             )
         else:
-            for user in users_list:
+            for account in accounts_list:
                 list_container.controls.append(
                     ft.Container(
                         ft.Row([
                             ft.Icon(
-                                ft.icons.PERSON,
+                                ft.icons.PHONE,
                                 size=40,
-                                color=ft.colors.BLUE if user.get("rol") == "administrador" else ft.colors.GREY
+                                color=ft.colors.GREEN if account["activo"] else ft.colors.GREY
                             ),
                             ft.Column([
-                                ft.Text(user.get("nombre", "Sin nombre"), size=16, weight=ft.FontWeight.BOLD),
-                                ft.Text(user.get("correo", ""), size=12, color=ft.colors.GREY_700),
+                                ft.Text(account["nombre"], size=16, weight=ft.FontWeight.BOLD),
+                                ft.Text(f"Teléfono: {account['phone']}", size=12, color=ft.colors.GREY_700),
                                 ft.Text(
-                                    user.get("rol", "usuario").capitalize(),
+                                    "Activo" if account["activo"] else "Inactivo",
                                     size=12,
-                                    color=ft.colors.BLUE if user.get("rol") == "administrador" else ft.colors.GREEN
+                                    color=ft.colors.GREEN if account["activo"] else ft.colors.RED
                                 ),
                             ], spacing=2, expand=True),
                             ft.IconButton(
                                 icon=ft.icons.EDIT,
-                                tooltip="Editar usuario",
-                                on_click=lambda e, u=user: edit_user(u)
+                                tooltip="Editar",
+                                on_click=lambda e, a=account: edit_account(a)
                             ),
                             ft.IconButton(
                                 icon=ft.icons.DELETE,
-                                tooltip="Eliminar usuario",
+                                tooltip="Eliminar",
                                 icon_color=ft.colors.RED,
-                                on_click=lambda e, u=user: delete_user(u)
+                                on_click=lambda e, a=account: delete_account(a)
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         padding=15,
@@ -234,13 +222,6 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
                         margin=ft.margin.only(bottom=10)
                     )
                 )
-        
-        # Intentar actualizar si hay referencia
-        if page_ref.get("column"):
-            try:
-                page_ref["column"].update()
-            except:
-                pass
     
     def render_form():
         """Renderizar formulario"""
@@ -251,7 +232,7 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
             ft.ElevatedButton(
                 "Guardar",
                 icon=ft.icons.SAVE,
-                on_click=save_user
+                on_click=save_account
             )
         ]
         if edit_mode["value"]:
@@ -264,21 +245,16 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
         
         form_controls = [
             ft.Text(
-                "Editar Usuario" if edit_mode["value"] else "Nuevo Usuario",
+                "Editar Cuenta" if edit_mode["value"] else "Nueva Cuenta",
                 size=18,
                 weight=ft.FontWeight.BOLD
             ),
             ft.Divider(),
             nombre_field,
-            correo_field,
-            clave_field,
-            ft.Text(
-                "Deja la contraseña vacía para mantener la actual" if edit_mode["value"] else "La contraseña es requerida",
-                size=11,
-                color=ft.colors.GREY_600,
-                italic=True
-            ),
-            rol_dropdown,
+            phone_field,
+            phone_id_field,
+            access_token_field,
+            activo_switch,
             ft.Row(buttons, spacing=10)
         ]
         
@@ -288,20 +264,9 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
     list_container = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True)
     form_container = ft.Column(spacing=15)
     
-    # Agregar mensaje de cargando inicial
-    list_container.controls.append(
-        ft.Container(
-            ft.Column([
-                ft.ProgressRing(),
-                ft.Text("Cargando usuarios...", size=16),
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
-            padding=40,
-            alignment=ft.alignment.center
-        )
-    )
-    
-    # Cargar usuarios inicialmente
-    load_users()
+    # Cargar cuentas inicialmente
+    load_accounts()
+    render_list()
     render_form()
     
     # Layout principal
@@ -311,10 +276,10 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
     if on_back:
         controls.append(ft.Row([
             ft.IconButton(icon=ft.icons.ARROW_BACK, on_click=on_back, tooltip="Regresar"),
-            ft.Text("Gestión de Usuarios", size=22, weight=ft.FontWeight.BOLD),
+            ft.Text("Gestión de Cuentas WhatsApp", size=22, weight=ft.FontWeight.BOLD),
         ], alignment=ft.MainAxisAlignment.START))
     else:
-        controls.append(ft.Text("Gestión de Usuarios", size=22, weight=ft.FontWeight.BOLD))
+        controls.append(ft.Text("Gestión de Cuentas WhatsApp", size=22, weight=ft.FontWeight.BOLD))
     
     controls.append(ft.Divider())
     
@@ -323,32 +288,32 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
         ft.Container(
             ft.Column([
                 ft.Row([
-                    ft.Icon(ft.icons.PEOPLE, size=40, color=ft.colors.BLUE),
+                    ft.Icon(ft.icons.PHONE, size=40, color=ft.colors.GREEN),
                     ft.Column([
-                        ft.Text("Editor de Usuarios", size=18, weight=ft.FontWeight.BOLD),
-                        ft.Text("Gestiona los usuarios del sistema", size=14, color=ft.colors.GREY_700),
+                        ft.Text("Cuentas WhatsApp Business", size=18, weight=ft.FontWeight.BOLD),
+                        ft.Text("Gestiona las cuentas de WhatsApp Business API", size=14, color=ft.colors.GREY_700),
                     ], spacing=2),
                 ], spacing=15),
             ], spacing=15),
             padding=20,
-            bgcolor=ft.colors.BLUE_50,
+            bgcolor=ft.colors.GREEN_50,
             border_radius=12,
         )
     )
     
-    # Botón nuevo usuario
+    # Botón nueva cuenta
     controls.append(ft.Container(
         ft.ElevatedButton(
-            "Nuevo Usuario",
+            "Nueva Cuenta",
             icon=ft.icons.ADD,
-            on_click=new_user_click
+            on_click=new_account_click
         ),
         margin=ft.margin.only(top=20, bottom=10)
     ))
     
-    # Lista de usuarios
+    # Lista de cuentas
     controls.append(ft.Container(
-        ft.Text("Usuarios Registrados", size=18, weight=ft.FontWeight.BOLD),
+        ft.Text("Cuentas Disponibles", size=18, weight=ft.FontWeight.BOLD),
         margin=ft.margin.only(top=10, bottom=5)
     ))
     controls.append(list_container)
@@ -370,4 +335,3 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
     )
     
     return main_container
-

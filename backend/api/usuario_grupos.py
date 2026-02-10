@@ -1,9 +1,9 @@
 """
 API para gestión de relaciones Usuario-Grupo en Dataverse
-Tabla: cr321_usuario_grupos
+Tabla: cr321_usuariogrupos
 
 Campos:
-- cr321_usuario_grupoid (PK, GUID)
+- cr321_usuariogruposid (PK, GUID)
 - cr321_usuarioid (GUID - FK a cr321_usuarios)
 - cr321_grupoid (GUID - FK a cr321_grup)
 """
@@ -27,7 +27,7 @@ def get_usuario_grupos():
     if not token:
         return jsonify({"error": "No se pudo autenticar con Dataverse"}), 503
     
-    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuario_gruposes?$select=cr321_usuario_grupoid"
+    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuariogrupos?$select=cr321_usuariogruposid"
     url += "&$expand=cr321_usuarioid($select=cr321_usuariosid,cr321_nombre,cr321_correo),cr321_grupoid($select=cr321_grupoid,cr321_nombre,cr321_tipo)"
     
     filters = []
@@ -48,7 +48,7 @@ def get_usuario_grupos():
             relaciones = []
             for rel in data.get("value", []):
                 relaciones.append({
-                    "id": rel.get("cr321_usuario_grupoid"),
+                    "id": rel.get("cr321_usuariogruposid"),
                     "usuario": rel.get("cr321_usuarioid", {}),
                     "grupo": rel.get("cr321_grupoid", {})
                 })
@@ -61,13 +61,15 @@ def get_usuario_grupos():
 
 @bp_usuario_grupos.route('/api/usuario-grupos/usuario/<usuario_id>', methods=['GET'])
 def get_grupos_by_usuario(usuario_id):
-    """Obtener todos los grupos de un usuario"""
+    """Obtener todos los grupos de un usuario usando lookup _cr321_grupo_value"""
     token = get_token()
     if not token:
         return jsonify({"error": "No se pudo autenticar con Dataverse"}), 503
     
-    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuario_gruposes?$filter=_cr321_usuarioid_value eq {usuario_id}"
-    url += "&$expand=cr321_grupoid($select=cr321_grupoid,cr321_idgrupo,cr321_nombre,cr321_tipo,cr321_descripcion)"
+    # Usar lookup _cr321_grupo_value con $expand para obtener nombres directamente
+    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuariogrupos?$filter=_cr321_usuarioid_value eq {usuario_id}"
+    url += "&$select=cr321_usuariogrupoid,_cr321_grupo_value"
+    url += "&$expand=cr321_grupo($select=cr321_grupid,cr321_grupoid,cr321_nombre)"
     
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     
@@ -75,17 +77,21 @@ def get_grupos_by_usuario(usuario_id):
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = response.json()
+            
             grupos = []
             for rel in data.get("value", []):
-                grupo_data = rel.get("cr321_grupoid", {})
-                if grupo_data:
+                # Obtener datos del lookup navegado
+                grupo_obj = rel.get("cr321_grupo")
+                
+                if grupo_obj:
                     grupos.append({
-                        "id": grupo_data.get("cr321_grupoid"),
-                        "idgrupo": grupo_data.get("cr321_idgrupo"),
-                        "nombre": grupo_data.get("cr321_nombre"),
-                        "tipo": grupo_data.get("cr321_tipo"),
-                        "descripcion": grupo_data.get("cr321_descripcion", "")
+                        "id": grupo_obj.get("cr321_grupid"),  # GUID del grupo
+                        "grupoid": grupo_obj.get("cr321_grupoid"),  # Código (0000-0004)
+                        "nombre": grupo_obj.get("cr321_nombre"),  # Nombre desde lookup
+                        "tipo": None,
+                        "descripcion": ""
                     })
+            
             return jsonify({"grupos": grupos}), 200
         else:
             return jsonify({"error": f"Error Dataverse: {response.status_code}"}), response.status_code
@@ -100,7 +106,7 @@ def get_usuarios_by_grupo(grupo_id):
     if not token:
         return jsonify({"error": "No se pudo autenticar con Dataverse"}), 503
     
-    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuario_gruposes?$filter=_cr321_grupoid_value eq {grupo_id}"
+    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuariogrupos?$filter=_cr321_grupoid_value eq {grupo_id}"
     url += "&$expand=cr321_usuarioid($select=cr321_usuariosid,cr321_idusuario,cr321_nombre,cr321_correo,cr321_rol)"
     
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
@@ -142,7 +148,7 @@ def create_usuario_grupo():
         return jsonify({"error": "No se pudo autenticar con Dataverse"}), 503
     
     # Verificar si la relación ya existe
-    check_url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuario_gruposes?$filter=_cr321_usuarioid_value eq {usuario_id} and _cr321_grupoid_value eq {grupo_id}"
+    check_url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuariogrupos?$filter=_cr321_usuarioid_value eq {usuario_id} and _cr321_grupoid_value eq {grupo_id}"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     
     try:
@@ -153,7 +159,7 @@ def create_usuario_grupo():
                 return jsonify({"error": "Esta relación ya existe"}), 400
         
         # Crear la relación
-        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuario_gruposes"
+        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuariogrupos"
         headers["Content-Type"] = "application/json"
         
         payload = {
@@ -177,7 +183,7 @@ def delete_usuario_grupo(relacion_id):
     if not token:
         return jsonify({"error": "No se pudo autenticar con Dataverse"}), 503
     
-    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuario_gruposes({relacion_id})"
+    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_usuariogrupos({relacion_id})"
     headers = {"Authorization": f"Bearer {token}"}
     
     try:

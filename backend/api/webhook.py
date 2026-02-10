@@ -96,8 +96,11 @@ def crear_contacto_automatico(telefono, nombre=None):
 
 def load_menu_from_dataverse():
     """
-    Carga el menú dinámicamente desde cr321_grup tipo "A"
-    Retorna diccionario con opciones del menú
+    Carga el menú dinámicamente desde la tabla cr321_chatbot
+    CADA FILA ACTIVA = UNA OPCIÓN DEL MENÚ
+    - cr321_name = Nombre de la opción principal (1. Informacion, 2. Soporte, etc)
+    - cr321_elemento1-5 = Sub-opciones de esa categoría
+    Solo carga chatbots con cr321_active = true
     """
     token = get_token()
     if not token:
@@ -105,11 +108,11 @@ def load_menu_from_dataverse():
         return get_default_menu()
     
     try:
-        # Consultar grupos tipo A (462410000)
-        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_grups"
-        url += "?$select=cr321_grupoid,cr321_idgrupo,cr321_nombre,cr321_descripcion"
-        url += "&$filter=cr321_tipo eq 462410000"
-        url += "&$orderby=cr321_idgrupo asc"
+        # Consultar TODOS los chatbots activos (cr321_active = true)
+        url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots"
+        url += "?$select=cr321_chatbotid,cr321_name,cr321_active,cr321_elemento1,cr321_elemento2,cr321_elemento3,cr321_elemento4,cr321_elemento5"
+        url += "&$filter=cr321_active eq true"
+        url += "&$orderby=cr321_name asc"
         
         headers = {
             "Authorization": f"Bearer {token}",
@@ -120,40 +123,66 @@ def load_menu_from_dataverse():
         
         if response.status_code == 200:
             data = response.json()
-            grupos = data.get("value", [])
+            chatbots = data.get("value", [])
             
-            if not grupos:
-                print("[WEBHOOK] No se encontraron grupos tipo A, usando menú por defecto")
+            if not chatbots:
+                print("[WEBHOOK] No se encontraron chatbots activos, usando menú por defecto")
                 return get_default_menu()
             
-            # Construir menú dinámico
+            # Construir menú dinámico: CADA CHATBOT = UNA OPCIÓN PRINCIPAL
             menu_opciones = {}
-            for idx, grupo in enumerate(grupos, 1):
-                nombre = grupo.get("cr321_nombre", f"Opción {idx}")
-                descripcion = grupo.get("cr321_descripcion", "")
+            
+            print(f"[WEBHOOK] Construyendo menú desde {len(chatbots)} chatbots activos:")
+            
+            for idx, chatbot in enumerate(chatbots, 1):
+                chatbot_name = chatbot.get("cr321_name", f"Opción {idx}")
                 
-                # Mapear nombres a tipos de flujo
-                tipo = map_nombre_to_tipo(nombre)
+                # Obtener elementos (sub-opciones) de este chatbot
+                elementos = [
+                    chatbot.get("cr321_elemento1"),
+                    chatbot.get("cr321_elemento2"),
+                    chatbot.get("cr321_elemento3"),
+                    chatbot.get("cr321_elemento4"),
+                    chatbot.get("cr321_elemento5")
+                ]
+                
+                # Filtrar solo elementos no vacíos
+                sub_opciones = [e.strip() for e in elementos if e and e.strip()]
+                
+                # Mapear nombre a tipo de flujo (usa el primer elemento o el nombre del chatbot)
+                tipo = map_nombre_to_tipo(sub_opciones[0] if sub_opciones else chatbot_name)
                 preguntas = get_preguntas_for_tipo(tipo)
                 mensajes = get_mensajes_for_tipo(tipo)
                 
                 menu_opciones[str(idx)] = {
-                    "nombre": nombre,
+                    "nombre": chatbot_name,
                     "tipo": tipo,
-                    "descripcion": descripcion,
                     "preguntas": preguntas,
                     "mensajes": mensajes,
-                    "grupo_id": grupo.get("cr321_grupoid")
+                    "chatbot_id": chatbot.get("cr321_chatbotid"),
+                    "chatbot_name": chatbot_name,
+                    "sub_opciones": sub_opciones  # ✨ NUEVO: Lista de sub-opciones
                 }
+                
+                print(f"  [{idx}] {chatbot_name} - {len(sub_opciones)} sub-opciones")
+                for sub_idx, sub_opcion in enumerate(sub_opciones, 1):
+                    print(f"      {sub_idx}. {sub_opcion}")
             
-            print(f"[WEBHOOK] Menú cargado: {len(menu_opciones)} opciones")
+            if not menu_opciones:
+                print("[WEBHOOK] No se pudieron construir opciones de menú, usando menú por defecto")
+                return get_default_menu()
+            
+            print(f"[WEBHOOK] Menú cargado exitosamente: {len(menu_opciones)} opciones principales")
+            
             return menu_opciones
         else:
-            print(f"[WEBHOOK] Error al cargar grupos: {response.status_code}")
+            print(f"[WEBHOOK] Error al cargar chatbots: {response.status_code}")
             return get_default_menu()
     
     except Exception as e:
-        print(f"[WEBHOOK] Error al cargar menú desde Dataverse: {e}")
+        print(f"[WEBHOOK] Error al cargar menú desde chatbot: {e}")
+        import traceback
+        traceback.print_exc()
         return get_default_menu()
 
 
@@ -250,8 +279,12 @@ def get_current_menu():
     if (MENU_CACHE["last_update"] is None or 
         (now - MENU_CACHE["last_update"]).total_seconds() > 300):
         
+        print("[MENU] Cargando menú desde Dataverse...")
         MENU_CACHE["menu"] = load_menu_from_dataverse()
         MENU_CACHE["last_update"] = now
+        print(f"[MENU] Cache actualizado con {len(MENU_CACHE['menu'])} opciones")
+    else:
+        print(f"[MENU] Usando cache (último update hace {int((now - MENU_CACHE['last_update']).total_seconds())}s)")
     
     return MENU_CACHE["menu"]
 
@@ -385,17 +418,31 @@ def create_ticket_record(phone, nombre, empresa, descripcion, tipo, token):
 
 
 def get_menu_text():
-    """Genera el texto del menú principal desde grupos dinámicos"""
+    """Genera el texto del menú principal con sub-opciones desde chatbots"""
     menu_opciones = get_current_menu()
+    print(f"[MENU_TEXT] Generando menú con {len(menu_opciones)} opciones")
     menu = "¡Bienvenido! Por favor seleccione una opción:\n\n"
+    
     for key, opcion in menu_opciones.items():
         menu += f"{key}. {opcion['nombre']}\n"
+        print(f"[MENU_TEXT]   [{key}] {opcion['nombre']}")
+        
+        # ✨ NUEVO: Mostrar sub-opciones si existen
+        sub_opciones = opcion.get('sub_opciones', [])
+        if sub_opciones:
+            for sub_opcion in sub_opciones:
+                menu += f"   - {sub_opcion}\n"
+                print(f"[MENU_TEXT]      - {sub_opcion}")
+            menu += "\n"  # Línea en blanco entre categorías
+    
     return menu
 
 
 def process_menu_response(phone, message_text):
     """Procesa la respuesta del usuario en el menú"""
+    print(f"[MENU_RESPONSE] Procesando mensaje de {phone}: '{message_text}'")
     menu_opciones = get_current_menu()
+    print(f"[MENU_RESPONSE] Menu opciones disponibles: {list(menu_opciones.keys())}")
     
     # Verificar si el usuario está en una conversación activa
     if phone in conversation_states:

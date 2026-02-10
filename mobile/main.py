@@ -7,6 +7,8 @@ from components.chat_detail import ChatDetailView
 from components.users import UsersView
 from components.settings import SettingsView
 from components.chatbots import ChatbotsView
+from components.templates import TemplatesView
+from components.whatsapp_accounts import WhatsAppAccountsView
 from assets import styles
 import requests
 from datetime import datetime
@@ -29,14 +31,17 @@ class WhatsAppAPI:
     def get_user_groups(self, user_id):
         """Obtener grupos permitidos para un usuario específico"""
         try:
-            url = f"{self.base_url}/api/usuario-grupos?usuario_id={user_id}"
+            url = f"{self.base_url}/api/usuario-grupos/usuario/{user_id}"
             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
             print(f"[API] GET {url}")
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                return data.get("grupos", [])
+                grupos = data.get("grupos", [])
+                print(f"[API] Grupos del usuario {user_id}: {[g.get('nombre') for g in grupos]}")
+                return grupos
             else:
+                print(f"[API] Error al obtener grupos: {response.status_code}")
                 return []
         except Exception as e:
             print(f"Error al obtener grupos del usuario: {e}")
@@ -108,6 +113,66 @@ class WhatsAppAPI:
         except Exception as e:
             print(f"Error al enviar mensaje: {e}")
             return False
+    
+    def get_users(self):
+        """Obtener lista de usuarios"""
+        try:
+            url = f"{self.base_url}/api/users"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] GET {url}")
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise Exception(f"Error {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"Error al obtener usuarios: {e}")
+            raise e
+    
+    def create_user(self, user_data):
+        """Crear nuevo usuario"""
+        try:
+            url = f"{self.base_url}/api/users"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] POST {url}")
+            response = requests.post(url, json=user_data, headers=headers, timeout=10)
+            if response.status_code in [200, 201]:
+                return response.json()
+            else:
+                raise Exception(f"Error {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"Error al crear usuario: {e}")
+            raise e
+    
+    def update_user(self, user_id, user_data):
+        """Actualizar usuario existente"""
+        try:
+            url = f"{self.base_url}/api/users/{user_id}"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] PATCH {url}")
+            response = requests.patch(url, json=user_data, headers=headers, timeout=10)
+            if response.status_code in [200, 204]:
+                return response.json() if response.text else {"success": True}
+            else:
+                raise Exception(f"Error {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"Error al actualizar usuario: {e}")
+            raise e
+    
+    def delete_user(self, user_id):
+        """Eliminar usuario"""
+        try:
+            url = f"{self.base_url}/api/users/{user_id}"
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            print(f"[API] DELETE {url}")
+            response = requests.delete(url, headers=headers, timeout=10)
+            if response.status_code in [200, 204]:
+                return {"success": True}
+            else:
+                raise Exception(f"Error {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"Error al eliminar usuario: {e}")
+            raise e
 
 def format_timestamp(ts):
     try:
@@ -199,6 +264,7 @@ def main(page: ft.Page):
     selected_conversation = {"value": None}
     chat_messages = []
     current_group = {"value": "GENERAL"}  # Grupo por defecto
+    user_groups_cache = {"value": None}  # Cache de grupos del usuario
 
     # Campos de entrada para login
     correo_input = ft.TextField(label="Correo")
@@ -220,7 +286,7 @@ def main(page: ft.Page):
                 'token': token
             })
             api.set_token(token)
-            current_view["value"] = "dashboard"
+            current_view["value"] = "chats"
             render()
         else:
             # Mostrar mensaje de error específico
@@ -232,15 +298,46 @@ def main(page: ft.Page):
             page.update()
 
     def on_nav_change(e):
+        """Navegación simplificada con menú fijo"""
         idx = e.control.selected_index
+        user_rol = user.get('rol')
+        
+        print(f"[NAV] Índice seleccionado: {idx}, Rol: {user_rol}")
+        
+        # Menú fijo:
+        # - 0: Chats (todos)
+        # Si administrador:
+        #   - 1: Chatbots
+        #   - 2: Usuarios  
+        #   - 3: Templates
+        #   - 4: Cuentas WA
+        #   - 5: Salir
+        # Si usuario:
+        #   - 1: Salir
+        
         if idx == 0:
+            # Chats (visible para todos)
             current_view["value"] = "chats"
-        elif idx == 1:
-            current_view["value"] = "chatbots"
-        elif idx == 2:
-            current_view["value"] = "users"
-        elif idx == 3:
-            current_view["value"] = "settings"
+        elif user_rol == 'administrador':
+            if idx == 1:
+                current_view["value"] = "chatbots"
+            elif idx == 2:
+                current_view["value"] = "users"
+            elif idx == 3:
+                current_view["value"] = "templates"
+            elif idx == 4:
+                current_view["value"] = "whatsapp_accounts"
+            elif idx == 5:
+                # Salir
+                on_logout()
+                return
+        else:
+            # Usuario normal
+            if idx == 1:
+                # Salir
+                on_logout()
+                return
+        
         render()
 
     def on_logout(e=None):
@@ -254,6 +351,8 @@ def main(page: ft.Page):
         })
         api.set_token(None)
         current_view["value"] = "login"
+        # Limpiar cache de grupos
+        user_groups_cache["value"] = None
         # Limpiar campos de entrada
         correo_input.value = ""
         clave_input.value = ""
@@ -269,7 +368,8 @@ def main(page: ft.Page):
         page.update()
 
     def back_to_dashboard(e=None):
-        current_view["value"] = "dashboard"
+        """Volver a la vista principal de chats"""
+        current_view["value"] = "chats"
         render()
 
     def open_chat(conv):
@@ -328,50 +428,82 @@ def main(page: ft.Page):
             page.add(ChatDetailView(conv, chat_messages, back_to_chats, send_message_to_chat, refresh_chat_messages, current_group["value"]))
         else:
             # Layout con sidebar siempre a la izquierda (modo iPhone)
-            # Determinar grupos disponibles según rol del usuario
-            if user.get('rol') == 'administrador':
-                # Administrador ve todos los grupos
-                available_groups = api.get_all_groups()
-                if "TODOS" not in available_groups:
-                    available_groups.insert(0, "TODOS")
-                print(f"[PERMISOS] Administrador - Todos los grupos disponibles: {available_groups}")
-            else:
-                # Usuario normal solo ve sus grupos asignados
-                user_id = user.get('id')  # Necesitamos obtener el ID del usuario
-                if user_id:
-                    user_groups = api.get_user_groups(user_id)
-                    available_groups = [g.get("nombre", "") for g in user_groups]
-                else:
-                    # Si no hay ID, usar grupos de las conversaciones
-                    _, available_groups = api.get_conversations(current_group["value"])
-                print(f"[PERMISOS] Usuario - Grupos asignados: {available_groups}")
-            
             sidebar = SidebarView(
                 on_nav_change, 
                 on_logout, 
                 user.get('nombre'),
-                available_groups,
-                on_group_change
+                user.get('rol')
             )
             
             content = None
             
-            if current_view["value"] == "dashboard":
-                content = DashboardView(None, on_group_change, current_group["value"], available_groups)
-            elif current_view["value"] == "chats":
-                # Obtener conversaciones filtradas por grupo
-                conversations, _ = api.get_conversations(current_group["value"])
-                # Filtrar conversaciones según grupos permitidos
-                if user.get('rol') != 'administrador' and available_groups:
-                    conversations = [c for c in conversations if c.get("group") in available_groups]
+            if current_view["value"] == "chats":
+                # Obtener conversaciones
+                conversations, available_groups = api.get_conversations(current_group["value"])
+                
+                # Filtrar conversaciones según grupos permitidos del usuario
+                if user.get('rol') != 'administrador':
+                    user_id = user.get('id')
+                    if user_id:
+                        # Usar cache si existe, sino consultar API
+                        if user_groups_cache["value"] is None:
+                            print(f"[FILTRO] Cargando grupos del usuario {user.get('nombre')}...")
+                            user_groups = api.get_user_groups(user_id)
+                            user_groups_cache["value"] = user_groups
+                        else:
+                            print(f"[FILTRO] Usando cache de grupos")
+                            user_groups = user_groups_cache["value"]
+                        
+                        # Extraer nombres de grupos directamente desde backend (con lookups)
+                        user_group_names = [g.get("nombre") for g in user_groups if g.get("nombre")]
+                        
+                        # Si el usuario tiene grupos asignados, filtrar
+                        if user_group_names:
+                            print(f"[FILTRO] Filtrando {len(conversations)} conversaciones para grupos: {user_group_names}")
+                            conversations = [c for c in conversations if c.get("group") in user_group_names]
+                            print(f"[FILTRO] Resultado: {len(conversations)} conversaciones visibles")
+                        else:
+                            print(f"[FILTRO] Usuario sin grupos - mostrando todas las conversaciones")
+                else:
+                    print(f"[FILTRO] Administrador - mostrando todas las conversaciones")
+                    
                 content = ChatsView(conversations, open_chat, current_group["value"], available_groups, on_group_change)
-            elif current_view["value"] == "chatbots":
-                content = ChatbotsView(back_to_dashboard, API_BASE_URL, user.get('token', ''))
             elif current_view["value"] == "users":
-                # Obtener lista de usuarios real del backend
-                nonlocal users_list
-                users_list = get_users_api(user.get('token', ''))
-                content = UsersView(users_list, back_to_dashboard)
+                # Solo administradores pueden ver usuarios
+                if user.get('rol') == 'administrador':
+                    content = UsersView(back_to_dashboard, API_BASE_URL, user.get('token', ''))
+                else:
+                    content = ft.Container(
+                        ft.Text("No tienes permisos para acceder a esta sección", size=18, color=ft.colors.RED),
+                        padding=20
+                    )
+            elif current_view["value"] == "chatbots":
+                # Solo administradores pueden ver chatbots
+                if user.get('rol') == 'administrador':
+                    content = ChatbotsView(back_to_dashboard, API_BASE_URL, user.get('token', ''))
+                else:
+                    content = ft.Container(
+                        ft.Text("No tienes permisos para acceder a esta sección", size=18, color=ft.colors.RED),
+                        padding=20
+                    )
+            elif current_view["value"] == "templates":
+                # Solo administradores pueden ver templates
+                if user.get('rol') == 'administrador':
+                    content = TemplatesView(back_to_dashboard, API_BASE_URL, user.get('token', ''))
+                else:
+                    content = ft.Container(
+                        ft.Text("No tienes permisos para acceder a esta sección", size=18, color=ft.colors.RED),
+                        padding=20
+                    )
+            elif current_view["value"] == "whatsapp_accounts":
+                # Solo administradores pueden ver cuentas WhatsApp
+                if user.get('rol') == 'administrador':
+                    content = WhatsAppAccountsView(back_to_dashboard, API_BASE_URL, user.get('token', ''))
+                else:
+                    content = ft.Container(
+                        ft.Text("No tienes permisos para acceder a esta sección", size=18, color=ft.colors.RED),
+                        padding=20
+                    )
             elif current_view["value"] == "settings":
                 content = SettingsView(back_to_dashboard)
             

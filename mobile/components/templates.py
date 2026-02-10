@@ -1,68 +1,66 @@
-# Users component for Flet app - CRUD completo
+# Templates component for Flet app
 import flet as ft
 import requests
 
-def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
-    """Vista para gestión de usuarios (solo admin)"""
+def TemplatesView(on_back=None, api_base_url="http://localhost:5000", token=None):
+    """Vista para gestión de templates de WhatsApp"""
     
     # Estado local
-    users_list = []
-    selected_user = {"value": None}
+    templates_list = []
+    selected_template = {"value": None}
     edit_mode = {"value": False}
     page_ref = {"value": None}
     
     # Campos del formulario
-    nombre_field = ft.TextField(label="Nombre Completo", width=300)
-    correo_field = ft.TextField(label="Correo Electrónico", width=300)
-    clave_field = ft.TextField(
-        label="Contraseña",
-        password=True,
-        can_reveal_password=True,
-        width=300
-    )
-    rol_dropdown = ft.Dropdown(
-        label="Rol",
+    nombre_field = ft.TextField(label="Nombre del Template", width=300)
+    categoria_dropdown = ft.Dropdown(
+        label="Categoría",
         width=300,
         options=[
-            ft.dropdown.Option(key="usuario", text="Usuario"),
-            ft.dropdown.Option(key="administrador", text="Administrador"),
+            ft.dropdown.Option(key="462410000", text="Marketing"),
+            ft.dropdown.Option(key="462410001", text="Utilidad"),
+            ft.dropdown.Option(key="462410002", text="Autenticación"),
         ],
-        value="usuario"
+        value="462410001"
     )
+    contenido_field = ft.TextField(
+        label="Contenido del Template",
+        multiline=True,
+        min_lines=5,
+        max_lines=10,
+        width=300
+    )
+    activo_switch = ft.Switch(label="Activo", value=True)
     
-    def load_users():
-        """Cargar usuarios desde la API"""
+    def load_templates():
+        """Cargar templates desde la API"""
         try:
-            url = f"{api_base_url}/api/users"
+            url = f"{api_base_url}/api/templates"
             headers = {"Authorization": f"Bearer {token}"} if token else {}
-            print(f"[USERS] Cargando desde: {url}")
             response = requests.get(url, headers=headers, timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
-                users_list.clear()
-                users_list.extend(data.get("users", []))
-                print(f"[USERS] Cargados {len(users_list)} usuarios")
-                render_list()
+                templates_list.clear()
+                templates_list.extend(data.get("templates", []))
+                print(f"[TEMPLATES] Cargados {len(templates_list)} templates")
                 return True
             else:
-                print(f"[USERS] Error al cargar: {response.status_code}")
-                render_list()
+                print(f"[TEMPLATES] Error al cargar: {response.status_code}")
                 return False
         except Exception as e:
-            print(f"[USERS] Excepción al cargar: {e}")
-            render_list()
+            print(f"[TEMPLATES] Excepción al cargar: {e}")
             return False
     
-    def save_user(e):
-        """Guardar usuario (crear o actualizar)"""
+    def save_template(e):
+        """Guardar template (crear o actualizar)"""
         nombre = nombre_field.value
-        correo = correo_field.value
-        clave = clave_field.value
-        rol = rol_dropdown.value
+        categoria = int(categoria_dropdown.value)
+        contenido = contenido_field.value
+        activo = activo_switch.value
         
-        if not nombre or not correo:
-            show_snackbar("Nombre y correo son requeridos")
+        if not nombre or not contenido:
+            show_snackbar("El nombre y contenido son requeridos")
             return
         
         try:
@@ -73,31 +71,24 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
             
             data = {
                 "nombre": nombre,
-                "correo": correo,
-                "rol": rol
+                "categoria": categoria,
+                "contenido": contenido,
+                "activo": activo
             }
             
-            # Solo incluir clave si se proporciona
-            if clave:
-                data["clave"] = clave
-            elif not edit_mode["value"]:
-                # Clave requerida para nuevo usuario
-                show_snackbar("La contraseña es requerida para nuevos usuarios")
-                return
-            
-            if edit_mode["value"] and selected_user["value"]:
+            if edit_mode["value"] and selected_template["value"]:
                 # Actualizar
-                url = f"{api_base_url}/api/users/{selected_user['value']['id']}"
+                url = f"{api_base_url}/api/templates/{selected_template['value']['id']}"
                 response = requests.patch(url, json=data, headers=headers, timeout=10)
             else:
                 # Crear
-                url = f"{api_base_url}/api/users"
+                url = f"{api_base_url}/api/templates"
                 response = requests.post(url, json=data, headers=headers, timeout=10)
             
             if response.status_code in [200, 201]:
-                show_snackbar("Usuario guardado exitosamente")
+                show_snackbar("Template guardado exitosamente")
                 cancel_edit(None)
-                load_users()
+                load_templates()
                 render_list()
                 
                 # Actualizar la interfaz
@@ -110,17 +101,17 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
                 show_snackbar(f"Error al guardar: {response.status_code}")
         
         except Exception as ex:
-            print(f"[USERS] Error al guardar: {ex}")
+            print(f"[TEMPLATES] Error al guardar: {ex}")
             show_snackbar(f"Error: {str(ex)}")
     
-    def edit_user(user):
-        """Editar usuario existente"""
-        selected_user["value"] = user
+    def edit_template(template):
+        """Editar template existente"""
+        selected_template["value"] = template
         edit_mode["value"] = True
-        nombre_field.value = user["nombre"]
-        correo_field.value = user["correo"]
-        clave_field.value = ""  # No mostrar clave existente
-        rol_dropdown.value = user["rol"]
+        nombre_field.value = template["nombre"]
+        categoria_dropdown.value = str(template["categoria_valor"])
+        contenido_field.value = template["contenido"]
+        activo_switch.value = template["activo"]
         
         render_form()
         
@@ -131,16 +122,16 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
             except:
                 pass
     
-    def delete_user(user):
-        """Eliminar usuario"""
+    def delete_template(template):
+        """Eliminar template"""
         try:
-            url = f"{api_base_url}/api/users/{user['id']}"
+            url = f"{api_base_url}/api/templates/{template['id']}"
             headers = {"Authorization": f"Bearer {token}"} if token else {}
             response = requests.delete(url, headers=headers, timeout=10)
             
             if response.status_code in [200, 204]:
-                show_snackbar("Usuario eliminado")
-                load_users()
+                show_snackbar("Template eliminado")
+                load_templates()
                 render_list()
                 
                 # Actualizar la interfaz
@@ -152,17 +143,17 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
             else:
                 show_snackbar(f"Error al eliminar: {response.status_code}")
         except Exception as ex:
-            print(f"[USERS] Error al eliminar: {ex}")
+            print(f"[TEMPLATES] Error al eliminar: {ex}")
             show_snackbar(f"Error: {str(ex)}")
     
     def cancel_edit(e):
         """Cancelar edición"""
-        selected_user["value"] = None
+        selected_template["value"] = None
         edit_mode["value"] = False
         nombre_field.value = ""
-        correo_field.value = ""
-        clave_field.value = ""
-        rol_dropdown.value = "usuario"
+        categoria_dropdown.value = "462410001"
+        contenido_field.value = ""
+        activo_switch.value = True
         render_form()
         
         # Actualizar la interfaz
@@ -174,57 +165,57 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
     
     def show_snackbar(message):
         """Mostrar mensaje temporal"""
-        print(f"[USERS] {message}")
+        print(f"[TEMPLATES] {message}")
     
-    def new_user_click(e):
-        """Manejar clic en nuevo usuario"""
+    def new_template_click(e):
+        """Manejar clic en nuevo template"""
         cancel_edit(None)
     
     def render_list():
-        """Renderizar lista de usuarios"""
+        """Renderizar lista de templates"""
         list_container.controls.clear()
         
-        if not users_list:
+        if not templates_list:
             list_container.controls.append(
                 ft.Container(
                     ft.Column([
                         ft.Icon(ft.icons.INFO_OUTLINE, size=50, color=ft.colors.BLUE_400),
-                        ft.Text("No hay usuarios registrados", size=16),
-                        ft.Text("Haz clic en 'Nuevo Usuario' para crear uno", size=12, color=ft.colors.GREY),
+                        ft.Text("No hay templates configurados", size=16),
+                        ft.Text("Haz clic en 'Nuevo Template' para crear uno", size=12, color=ft.colors.GREY),
                     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
                     padding=40,
                     alignment=ft.alignment.center
                 )
             )
         else:
-            for user in users_list:
+            for template in templates_list:
                 list_container.controls.append(
                     ft.Container(
                         ft.Row([
                             ft.Icon(
-                                ft.icons.PERSON,
+                                ft.icons.ARTICLE,
                                 size=40,
-                                color=ft.colors.BLUE if user.get("rol") == "administrador" else ft.colors.GREY
+                                color=ft.colors.GREEN if template["activo"] else ft.colors.GREY
                             ),
                             ft.Column([
-                                ft.Text(user.get("nombre", "Sin nombre"), size=16, weight=ft.FontWeight.BOLD),
-                                ft.Text(user.get("correo", ""), size=12, color=ft.colors.GREY_700),
+                                ft.Text(template["nombre"], size=16, weight=ft.FontWeight.BOLD),
+                                ft.Text(f"Categoría: {template['categoria']}", size=12, color=ft.colors.GREY_700),
                                 ft.Text(
-                                    user.get("rol", "usuario").capitalize(),
+                                    "Activo" if template["activo"] else "Inactivo",
                                     size=12,
-                                    color=ft.colors.BLUE if user.get("rol") == "administrador" else ft.colors.GREEN
+                                    color=ft.colors.GREEN if template["activo"] else ft.colors.RED
                                 ),
                             ], spacing=2, expand=True),
                             ft.IconButton(
                                 icon=ft.icons.EDIT,
-                                tooltip="Editar usuario",
-                                on_click=lambda e, u=user: edit_user(u)
+                                tooltip="Editar",
+                                on_click=lambda e, t=template: edit_template(t)
                             ),
                             ft.IconButton(
                                 icon=ft.icons.DELETE,
-                                tooltip="Eliminar usuario",
+                                tooltip="Eliminar",
                                 icon_color=ft.colors.RED,
-                                on_click=lambda e, u=user: delete_user(u)
+                                on_click=lambda e, t=template: delete_template(t)
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         padding=15,
@@ -234,13 +225,6 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
                         margin=ft.margin.only(bottom=10)
                     )
                 )
-        
-        # Intentar actualizar si hay referencia
-        if page_ref.get("column"):
-            try:
-                page_ref["column"].update()
-            except:
-                pass
     
     def render_form():
         """Renderizar formulario"""
@@ -251,7 +235,7 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
             ft.ElevatedButton(
                 "Guardar",
                 icon=ft.icons.SAVE,
-                on_click=save_user
+                on_click=save_template
             )
         ]
         if edit_mode["value"]:
@@ -264,21 +248,15 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
         
         form_controls = [
             ft.Text(
-                "Editar Usuario" if edit_mode["value"] else "Nuevo Usuario",
+                "Editar Template" if edit_mode["value"] else "Nuevo Template",
                 size=18,
                 weight=ft.FontWeight.BOLD
             ),
             ft.Divider(),
             nombre_field,
-            correo_field,
-            clave_field,
-            ft.Text(
-                "Deja la contraseña vacía para mantener la actual" if edit_mode["value"] else "La contraseña es requerida",
-                size=11,
-                color=ft.colors.GREY_600,
-                italic=True
-            ),
-            rol_dropdown,
+            categoria_dropdown,
+            contenido_field,
+            activo_switch,
             ft.Row(buttons, spacing=10)
         ]
         
@@ -288,20 +266,9 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
     list_container = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True)
     form_container = ft.Column(spacing=15)
     
-    # Agregar mensaje de cargando inicial
-    list_container.controls.append(
-        ft.Container(
-            ft.Column([
-                ft.ProgressRing(),
-                ft.Text("Cargando usuarios...", size=16),
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
-            padding=40,
-            alignment=ft.alignment.center
-        )
-    )
-    
-    # Cargar usuarios inicialmente
-    load_users()
+    # Cargar templates inicialmente
+    load_templates()
+    render_list()
     render_form()
     
     # Layout principal
@@ -311,10 +278,10 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
     if on_back:
         controls.append(ft.Row([
             ft.IconButton(icon=ft.icons.ARROW_BACK, on_click=on_back, tooltip="Regresar"),
-            ft.Text("Gestión de Usuarios", size=22, weight=ft.FontWeight.BOLD),
+            ft.Text("Gestión de Templates", size=22, weight=ft.FontWeight.BOLD),
         ], alignment=ft.MainAxisAlignment.START))
     else:
-        controls.append(ft.Text("Gestión de Usuarios", size=22, weight=ft.FontWeight.BOLD))
+        controls.append(ft.Text("Gestión de Templates", size=22, weight=ft.FontWeight.BOLD))
     
     controls.append(ft.Divider())
     
@@ -323,10 +290,10 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
         ft.Container(
             ft.Column([
                 ft.Row([
-                    ft.Icon(ft.icons.PEOPLE, size=40, color=ft.colors.BLUE),
+                    ft.Icon(ft.icons.ARTICLE, size=40, color=ft.colors.BLUE),
                     ft.Column([
-                        ft.Text("Editor de Usuarios", size=18, weight=ft.FontWeight.BOLD),
-                        ft.Text("Gestiona los usuarios del sistema", size=14, color=ft.colors.GREY_700),
+                        ft.Text("Templates de WhatsApp", size=18, weight=ft.FontWeight.BOLD),
+                        ft.Text("Gestiona plantillas de mensajes", size=14, color=ft.colors.GREY_700),
                     ], spacing=2),
                 ], spacing=15),
             ], spacing=15),
@@ -336,19 +303,19 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
         )
     )
     
-    # Botón nuevo usuario
+    # Botón nuevo template
     controls.append(ft.Container(
         ft.ElevatedButton(
-            "Nuevo Usuario",
+            "Nuevo Template",
             icon=ft.icons.ADD,
-            on_click=new_user_click
+            on_click=new_template_click
         ),
         margin=ft.margin.only(top=20, bottom=10)
     ))
     
-    # Lista de usuarios
+    # Lista de templates
     controls.append(ft.Container(
-        ft.Text("Usuarios Registrados", size=18, weight=ft.FontWeight.BOLD),
+        ft.Text("Templates Disponibles", size=18, weight=ft.FontWeight.BOLD),
         margin=ft.margin.only(top=10, bottom=5)
     ))
     controls.append(list_container)
@@ -370,4 +337,3 @@ def UsersView(on_back=None, api_base_url="http://localhost:5000", token=None):
     )
     
     return main_container
-

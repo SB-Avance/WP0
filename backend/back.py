@@ -17,7 +17,7 @@ from api.auth import bp_auth
 from api.users import bp_users
 from api.messages import bp_messages
 from api.conversations import bp_conversations
-from api.webhook import bp_webhook
+from api.webhook import bp_webhook, get_menu_text
 from api.reportes import bp_reportes
 from api.settings import bp_settings
 from api.grupos import bp_grupos
@@ -25,6 +25,7 @@ from api.estados import bp_estados
 from api.tickets import bp_tickets
 from api.usuario_grupos import bp_usuario_grupos
 from api.chatbots import bp_chatbots
+from api.templates import bp_templates
 from api.whatsapp_accounts import bp_whatsapp_accounts
 # from api.cotizaciones import cotizaciones_bp  # Comentado temporalmente - import circular
 from api.chats_extended import bp as bp_chats_extended
@@ -51,21 +52,33 @@ print("--------------  Inicio ----------****------")
 print(goot.mostrar_variables())
 
 # ============ CONSTANTES ============
-# Mapeo de grupos: string <-> integer (Dataverse)
-GROUP_TO_INT = {
-    "SERVICIOS": 1,
-    "COTIZACIONES": 2,
-    "SOPORTE": 3,
-    "GENERAL": None,
-    "TODOS": None
-}
+# Cache de GUIDs de grupos (se carga al inicio)
+GROUP_GUID_CACHE = {}
 
-INT_TO_GROUP = {
-    1: "SERVICIOS",
-    2: "COTIZACIONES",
-    3: "SOPORTE",
-    None: "GENERAL"
-}
+def load_group_guids():
+    """Carga los GUIDs de grupos desde Dataverse al cache"""
+    global GROUP_GUID_CACHE
+    token = get_token()
+    if not token:
+        return
+    
+    url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_grups?$select=cr321_grupid,cr321_nombre"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            grupos = response.json().get("value", [])
+            GROUP_GUID_CACHE = {g["cr321_nombre"]: g["cr321_grupid"] for g in grupos}
+            print(f"[GRUPOS] Cache cargado: {list(GROUP_GUID_CACHE.keys())}")
+    except Exception as e:
+        print(f"[GRUPOS ERROR] {e}")
+
+def get_group_guid(group_name):
+    """Obtiene el GUID de un grupo por nombre"""
+    if not GROUP_GUID_CACHE:
+        load_group_guids()
+    return GROUP_GUID_CACHE.get(group_name)
 
 # Mapeo de tipos de mensaje
 MESSAGE_TYPES = {
@@ -88,18 +101,8 @@ def convert_timestamp(timestamp):
         return datetime.fromtimestamp(int(timestamp), tz=timezone.utc).isoformat().replace("+00:00", "Z")
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-def parse_group_filter(group_filter):
-    """Convierte grupo string a integer, None si no aplica filtro"""
-    if not group_filter or group_filter.upper() in ["TODOS", "NONE", "NULL"]:
-        return None
-    
-    if group_filter.isdigit():
-        return int(group_filter)
-    
-    return GROUP_TO_INT.get(group_filter.upper())
-
 def get_token():
-    """Obtiene token de autenticación de Azure AD para Dataverse"""
+    """Obtiene token de autenticacion de Azure AD para Dataverse"""
     try:
         authority = f"https://login.microsoftonline.com/{TENANT_ID}"
         app_auth = ConfidentialClientApplication(
@@ -156,10 +159,11 @@ def save_bot_response(phone_number, fromname, bot_message, timestamp, message_id
     if message_id:
         payload["cr321_messageid"] = message_id
     
-    # Agregar grupo si aplica
-    grupo_int = GROUP_TO_INT.get(group) if group else None
-    if grupo_int is not None:
-        payload["cr321_grupo"] = grupo_int
+    # Agregar grupo usando lookup (OData binding)
+    if group:
+        grupo_guid = get_group_guid(group)
+        if grupo_guid:
+            payload["cr321_grupoid@odata.bind"] = f"/cr321_grups({grupo_guid})"
 
     # Limpiar valores None o vacíos
     payload = {k: v for k, v in payload.items() if v not in [None, ""]}
@@ -197,10 +201,11 @@ def save_to_dataverse(message_id, fromphone, timestamp, message_type, body, from
         "cr321_direction": MESSAGE_DIRECTION["incoming"]
     }
     
-    # Agregar grupo si aplica
-    grupo_int = GROUP_TO_INT.get(group) if group else None
-    if grupo_int is not None:
-        payload["cr321_grupo"] = grupo_int
+    # Agregar grupo usando lookup (OData binding)
+    if group:
+        grupo_guid = get_group_guid(group)
+        if grupo_guid:
+            payload["cr321_grupoid@odata.bind"] = f"/cr321_grups({grupo_guid})"
     
     # Limpiar valores None o vacíos
     payload = {k: v for k, v in payload.items() if v not in [None, ""]}
@@ -216,10 +221,10 @@ def send_reply(phonenumber, text, timestamp, fromname="", group=None):
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Content-Type": "application/json"}
 
-    greeting = f"Hola {fromname}! que servicio requiere" if fromname else "Hola! que servicio requiere"
-
+    # 🚀 USAR MENÚ DINÁMICO DESDE cr321_chatbots (sin fallback hardcodeado)
     if text in ["hola", "menu", "mm"]:
-        message = f"{greeting} Opciones:\n1. PERSONAS\n2. EMPRESAS\n3. COORDINACION"
+        message = get_menu_text()
+        print(f"[SEND_REPLY] Menú dinámico cargado desde cr321_chatbots")
     elif text == "1":
         message = "Has seleccionado PERSONAS. En que podemos ayudarte?"
     elif text == "2":
@@ -346,15 +351,19 @@ def get_conversations():
     
     limit = request.args.get('limit', 50)
     group_filter = request.args.get('group', None)
-    grupo_int = parse_group_filter(group_filter)
     
+    # Usar $expand para traer el nombre del grupo directamente
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$top={limit}&$orderby=cr321_timestamp desc"
-    # Expandir categoría del chatbot si existe el campo
-    url += "&$expand=cr321_categoria_chatbot($select=cr321_nombre,cr321_tipo,cr321_descripcion)"
+    url += "&$expand=cr321_grupoid($select=cr321_nombre)"
     
-    if grupo_int is not None:
-        url += f"&$filter=cr321_grupo eq {grupo_int}"
-        print(f"[CONVERSATIONS] Filtrando por grupo: {grupo_int}")
+    # Filtro por grupo usando el GUID del lookup
+    if group_filter and group_filter.upper() != "TODOS":
+        group_guid = get_group_guid(group_filter)
+        if group_guid:
+            url += f"&$filter=_cr321_grupoid_value eq {group_guid}"
+            print(f"[CONVERSATIONS] Filtrando por grupo: {group_filter}")
+        else:
+            print(f"[CONVERSATIONS] Grupo no encontrado: {group_filter}")
     else:
         print(f"[CONVERSATIONS] Mostrando TODOS los grupos")
     
@@ -373,15 +382,17 @@ def get_conversations():
             
             for record in records:
                 phone = record.get("cr321_phone")
-                group_int = record.get("cr321_grupo")
-                group = INT_TO_GROUP.get(group_int, "GENERAL")
+                
+                # Obtener nombre del grupo desde el lookup expandido
+                grupo_obj = record.get("cr321_grupoid")
+                group = grupo_obj.get("cr321_nombre") if grupo_obj else "General"
                 groups.add(group)
                 
                 if phone:
-                    conv_key = f"{phone}_{group}"
-                    
-                    if conv_key not in conversations:
-                        conversations[conv_key] = {
+                    # Una conversación = un teléfono
+                    # Si ya existe, el primer mensaje (más reciente) define el grupo
+                    if phone not in conversations:
+                        conversations[phone] = {
                             "phone": phone,
                             "name": record.get("cr321_fromname", "Desconocido"),
                             "last_message": record.get("cr321_body", ""),
@@ -417,13 +428,15 @@ def get_messages(phone_number):
         return jsonify({"error": "Error de autenticacion"}), 500
     
     group_filter = request.args.get('group', None)
-    grupo_int = parse_group_filter(group_filter)
     
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s?$filter=cr321_phone eq '{phone_number}'"
     
-    if grupo_int is not None:
-        url += f" and cr321_grupo eq {grupo_int}"
-        print(f"[MESSAGES] Filtrando por grupo: {grupo_int}")
+    # Filtrar por grupo usando lookup
+    if group_filter and group_filter.upper() not in ["TODOS", "NONE", "NULL"]:
+        grupo_guid = get_group_guid(group_filter)
+        if grupo_guid:
+            url += f" and _cr321_grupoid_value eq {grupo_guid}"
+            print(f"[MESSAGES] Filtrando por grupo: {group_filter}")
     
     url += "&$orderby=cr321_timestamp asc"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
@@ -532,6 +545,7 @@ app.register_blueprint(bp_estados)
 app.register_blueprint(bp_tickets)
 app.register_blueprint(bp_usuario_grupos)
 app.register_blueprint(bp_chatbots)
+app.register_blueprint(bp_templates)
 app.register_blueprint(bp_whatsapp_accounts)
 # app.register_blueprint(cotizaciones_bp)  # Comentado temporalmente
 app.register_blueprint(bp_chats_extended)
@@ -548,5 +562,9 @@ if __name__ == "__main__":
     print(f"[STARTUP] Modo: {'PRODUCCION (Azure)' if is_production else 'DESARROLLO (Local)'}")
     print(f"[STARTUP] Debug: {'Desactivado' if not debug_mode else 'Activado'}")
     print(f"[STARTUP] Iniciando servidor en http://localhost:5000")
+    
+    # Cargar cache de grupos
+    print("[STARTUP] Cargando cache de grupos...")
+    load_group_guids()
     
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=debug_mode, use_reloader=False)

@@ -20,7 +20,7 @@ def get_chatbots():
     
     try:
         url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots"
-        url += "?$select=cr321_chatbotid,cr321_name,cr321_type,cr321_active,cr321_config"
+        url += "?$select=cr321_chatbotid,cr321_name,cr321_type,cr321_active,cr321_config,cr321_elemento1,cr321_elemento2,cr321_elemento3,cr321_elemento4,cr321_elemento5"
         url += "&$orderby=cr321_name asc"
         
         headers = {
@@ -42,7 +42,12 @@ def get_chatbots():
                     "tipo": get_tipo_nombre(item.get("cr321_type")),
                     "tipo_valor": item.get("cr321_type"),
                     "activo": item.get("cr321_active", False),
-                    "config": item.get("cr321_config", "{}")
+                    "config": item.get("cr321_config", "{}"),
+                    "elemento1": item.get("cr321_elemento1", ""),
+                    "elemento2": item.get("cr321_elemento2", ""),
+                    "elemento3": item.get("cr321_elemento3", ""),
+                    "elemento4": item.get("cr321_elemento4", ""),
+                    "elemento5": item.get("cr321_elemento5", "")
                 })
             
             return jsonify({"success": True, "chatbots": chatbots}), 200
