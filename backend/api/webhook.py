@@ -9,6 +9,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from goot import save_incoming_message, get_token, DATAVERSE_URL, PHONE_NUMBER_ID, ACCESS_TOKEN
 import requests
 from datetime import datetime, timezone
+import json
+
+# Importar handler manager - agregar path al directorio raíz
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
+from handlers.handler_manager import get_handler_manager
 
 bp_webhook = Blueprint('webhook', __name__)
 
@@ -110,7 +118,7 @@ def load_menu_from_dataverse():
     try:
         # Consultar TODOS los chatbots activos (cr321_active = true)
         url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots"
-        url += "?$select=cr321_chatbotid,cr321_name,cr321_active,cr321_elemento1,cr321_elemento2,cr321_elemento3,cr321_elemento4,cr321_elemento5"
+        url += "?$select=cr321_chatbotid,cr321_name,cr321_active,cr321_elemento1,cr321_elemento2,cr321_elemento3,cr321_grupoid,cr321_config"
         url += "&$filter=cr321_active eq true"
         url += "&$orderby=cr321_name asc"
         
@@ -137,17 +145,42 @@ def load_menu_from_dataverse():
             for idx, chatbot in enumerate(chatbots, 1):
                 chatbot_name = chatbot.get("cr321_name", f"Opción {idx}")
                 
-                # Obtener elementos (sub-opciones) de este chatbot
+                # ✅ VALIDACIÓN: Nombre de categoría no vacío
+                if not chatbot_name or not chatbot_name.strip():
+                    print(f"  [!] ADVERTENCIA: Chatbot {idx} sin nombre, omitiendo")
+                    continue
+                
+                # Obtener elementos (sub-opciones) de este chatbot (solo 3 elementos disponibles)
                 elementos = [
                     chatbot.get("cr321_elemento1"),
                     chatbot.get("cr321_elemento2"),
-                    chatbot.get("cr321_elemento3"),
-                    chatbot.get("cr321_elemento4"),
-                    chatbot.get("cr321_elemento5")
+                    chatbot.get("cr321_elemento3")
                 ]
                 
-                # Filtrar solo elementos no vacíos
+                # Filtrar solo elementos no vacíos y limpiar espacios
                 sub_opciones = [e.strip() for e in elementos if e and e.strip()]
+                
+                # ✅ VALIDACIÓN: Al menos 1 sub-opción requerida
+                if not sub_opciones:
+                    print(f"  [!] ADVERTENCIA: {chatbot_name} sin sub-opciones, omitiendo")
+                    continue
+                
+                # ✅ VALIDACIÓN: Máximo 10 sub-opciones (límite de WhatsApp)
+                if len(sub_opciones) > 10:
+                    print(f"  [!] ADVERTENCIA: {chatbot_name} tiene {len(sub_opciones)} sub-opciones, usando solo las primeras 10")
+                    sub_opciones = sub_opciones[:10]
+                
+                # 🆕 CARGAR CONFIGURACIÓN DE HANDLERS desde cr321_config (JSON)
+                config_json = chatbot.get("cr321_config", "{}")
+                handlers_config = {}
+                
+                try:
+                    if config_json:
+                        handlers_config = json.loads(config_json)
+                        print(f"  📦 Config JSON cargada: {list(handlers_config.keys())}")
+                except json.JSONDecodeError:
+                    print(f"  ⚠️ Error parseando cr321_config para {chatbot_name}")
+                    handlers_config = {}
                 
                 # Mapear nombre a tipo de flujo (usa el primer elemento o el nombre del chatbot)
                 tipo = map_nombre_to_tipo(sub_opciones[0] if sub_opciones else chatbot_name)
@@ -161,7 +194,9 @@ def load_menu_from_dataverse():
                     "mensajes": mensajes,
                     "chatbot_id": chatbot.get("cr321_chatbotid"),
                     "chatbot_name": chatbot_name,
-                    "sub_opciones": sub_opciones  # ✨ NUEVO: Lista de sub-opciones
+                    "sub_opciones": sub_opciones,  # ✨ NUEVO: Lista de sub-opciones
+                    "grupo_id": chatbot.get("cr321_grupoid"),  # 🆕 GUID del grupo de Dataverse
+                    "handlers_config": handlers_config  # 🆕 Configuración de handlers desde JSON
                 }
                 
                 print(f"  [{idx}] {chatbot_name} - {len(sub_opciones)} sub-opciones")
@@ -418,35 +453,140 @@ def create_ticket_record(phone, nombre, empresa, descripcion, tipo, token):
 
 
 def get_menu_text():
-    """Genera el texto del menú principal con sub-opciones desde chatbots"""
+    """Genera el texto del menú principal (solo categorías)"""
     menu_opciones = get_current_menu()
-    print(f"[MENU_TEXT] Generando menú con {len(menu_opciones)} opciones")
-    menu = "¡Bienvenido! Por favor seleccione una opción:\n\n"
+    print(f"[MENU_TEXT] Generando menú principal con {len(menu_opciones)} categorías")
+    menu = "¡Bienvenido! Por favor seleccione una categoría:\n\n"
     
     for key, opcion in menu_opciones.items():
         menu += f"{key}. {opcion['nombre']}\n"
         print(f"[MENU_TEXT]   [{key}] {opcion['nombre']}")
-        
-        # ✨ NUEVO: Mostrar sub-opciones si existen
-        sub_opciones = opcion.get('sub_opciones', [])
-        if sub_opciones:
-            for sub_opcion in sub_opciones:
-                menu += f"   - {sub_opcion}\n"
-                print(f"[MENU_TEXT]      - {sub_opcion}")
-            menu += "\n"  # Línea en blanco entre categorías
     
     return menu
 
 
+def get_submenu_text(opcion_id):
+    """Genera el texto del submenú para una categoría específica"""
+    menu_opciones = get_current_menu()
+    
+    if opcion_id not in menu_opciones:
+        return get_menu_text()  # Si no existe, volver al menú principal
+    
+    opcion = menu_opciones[opcion_id]
+    sub_opciones = opcion.get('sub_opciones', [])
+    
+    if not sub_opciones:
+        return "Esta categoría no tiene opciones disponibles.\n\n" + get_menu_text()
+    
+    print(f"[SUBMENU_TEXT] Generando submenú para: {opcion['nombre']}")
+    submenu = f"*{opcion['nombre']}*\n\nSeleccione una opción:\n\n"
+    
+    for idx, sub_opcion in enumerate(sub_opciones, 1):
+        submenu += f"{idx}. {sub_opcion}\n"
+        print(f"[SUBMENU_TEXT]   [{idx}] {sub_opcion}")
+    
+    submenu += "\n0. Volver al menú principal"
+    
+    return submenu
+
+
+def procesar_seleccion_elemento(phone, message_text, state, menu_opciones, handler_manager):
+    """Procesa la selección de un elemento del submenú"""
+    categoria_id = state.get("categoria_id")
+    
+    if categoria_id not in menu_opciones:
+        del conversation_states[phone]
+        return get_menu_text()
+    
+    opcion = menu_opciones[categoria_id]
+    sub_opciones = opcion.get('sub_opciones', [])
+    handlers_config = opcion.get('handlers_config', {})
+    
+    # Si escribe "0", volver al menú principal
+    if message_text.strip() == "0":
+        del conversation_states[phone]
+        return get_menu_text()
+    
+    # Intentar convertir a número (selección por índice)
+    try:
+        idx = int(message_text.strip())
+        if 1 <= idx <= len(sub_opciones):
+            elemento_seleccionado = sub_opciones[idx - 1]
+            print(f"[SUBMENU] Elemento seleccionado por índice {idx}: {elemento_seleccionado}")
+        else:
+            return f"❌ Opción inválida. Por favor elige un número entre 1 y {len(sub_opciones)} (o 0 para menú principal).\n\n" + get_submenu_text(categoria_id)
+    except ValueError:
+        # No es número, intentar buscar por nombre exacto
+        elemento_seleccionado = None
+        for sub_opcion in sub_opciones:
+            if message_text.strip().lower() == sub_opcion.lower():
+                elemento_seleccionado = sub_opcion
+                print(f"[SUBMENU] Elemento seleccionado por nombre: {elemento_seleccionado}")
+                break
+        
+        if not elemento_seleccionado:
+            return f"❌ Opción no encontrada. Por favor elige un número entre 1 y {len(sub_opciones)}.\n\n" + get_submenu_text(categoria_id)
+    
+    # Buscar handler para este elemento
+    handler_code = handlers_config.get(elemento_seleccionado)
+    
+    if handler_code and handler_manager.handler_existe(handler_code):
+        print(f"[HANDLER] Iniciando handler {handler_code} para '{elemento_seleccionado}'")
+        
+        # Obtener preguntas del handler
+        preguntas = handler_manager.get_preguntas(handler_code)
+        
+        if preguntas:
+            # Actualizar estado para conversación con handler
+            conversation_states[phone] = {
+                "modo": "conversacion_handler",
+                "opcion": categoria_id,
+                "sub_opcion": elemento_seleccionado,
+                "handler_code": handler_code,
+                "step": 0,
+                "respuestas": {},
+                "grupo_id": opcion.get("grupo_id")
+            }
+            
+            return preguntas[0]
+        else:
+            # Handler sin preguntas, ejecutar inmediatamente
+            mensaje = handler_manager.ejecutar_handler(
+                codigo=handler_code,
+                from_user=phone,
+                respuestas={},
+                grupo_id=opcion.get("grupo_id")
+            )
+            
+            del conversation_states[phone]
+            
+            if mensaje:
+                return f"{mensaje}\n\n{get_menu_text()}"
+            else:
+                return f"✅ {elemento_seleccionado}\n\nGracias por tu interés.\n\n{get_menu_text()}"
+    else:
+        # No tiene handler configurado, respuesta simple
+        del conversation_states[phone]
+        return f"✅ {elemento_seleccionado}\n\nGracias por tu interés.\n\n{get_menu_text()}"
+
+
 def process_menu_response(phone, message_text):
-    """Procesa la respuesta del usuario en el menú"""
+    """Procesa la respuesta del usuario en el menú (con soporte para handlers)"""
     print(f"[MENU_RESPONSE] Procesando mensaje de {phone}: '{message_text}'")
     menu_opciones = get_current_menu()
     print(f"[MENU_RESPONSE] Menu opciones disponibles: {list(menu_opciones.keys())}")
     
-    # Verificar si el usuario está en una conversación activa
+    handler_manager = get_handler_manager()
+    
+    # Verificar si el usuario está respondiendo preguntas de un handler
     if phone in conversation_states:
         state = conversation_states[phone]
+        
+        # Si está en modo "esperando_categoria" o "esperando_elemento", manejar diferente
+        if state.get("modo") == "esperando_elemento":
+            return procesar_seleccion_elemento(phone, message_text, state, menu_opciones, handler_manager)
+        
+        # Si ya está en conversación con handler (respondiendo preguntas)
         opcion_id = state.get("opcion")
         
         if opcion_id not in menu_opciones:
@@ -454,64 +594,120 @@ def process_menu_response(phone, message_text):
             return get_menu_text()
         
         opcion = menu_opciones[opcion_id]
-        preguntas = opcion.get("preguntas", [])
-        step = state.get("step", 0)
         
-        # Si hay preguntas pendientes
-        if step < len(preguntas):
-            pregunta_actual = preguntas[step]
+        # 🆕 SOPORTE PARA HANDLERS: Si hay handler_code, usar handler manager
+        handler_code = state.get("handler_code")
+        
+        if handler_code:
+            print(f"[HANDLER] Usando handler {handler_code} para conversación")
             
-            # Guardar respuesta anterior (si no es el primer paso)
-            if step > 0:
-                pregunta_anterior = preguntas[step - 1]
-                state["data"][pregunta_anterior] = message_text
+            # Obtener preguntas del handler
+            preguntas = handler_manager.get_preguntas(handler_code)
             
-            # Si es el último paso, guardar y crear ticket
-            if step == len(preguntas) - 1:
-                state["data"][pregunta_actual] = message_text
-                
-                # Crear ticket con los datos recopilados
-                ticket_data = {
-                    "tipo": opcion.get("tipo"),
-                    **state["data"]
-                }
-                ticket_id = create_ticket_from_conversation(phone, ticket_data)
-                
-                # Limpiar estado
+            if not preguntas:
+                # Si no hay preguntas o hay error, limpiar y mostrar menú
                 del conversation_states[phone]
+                return f"⚠️ Error con el handler {handler_code}.\n\n{get_menu_text()}"
+            
+            step = state.get("step", 0)
+            
+            # Si hay preguntas pendientes
+            if step < len(preguntas):
+                pregunta_actual = preguntas[step]
                 
-                if ticket_id:
-                    return f"¡Gracias! Su solicitud ha sido registrada con el ticket #{ticket_id}. Nos pondremos en contacto pronto.\n\n{get_menu_text()}"
+                # Guardar respuesta del usuario
+                state["respuestas"][pregunta_actual] = message_text
+                print(f"[HANDLER] Respuesta guardada: {pregunta_actual[:30]}... = {message_text[:30]}...")
+                
+                # Si es el último paso, ejecutar handler
+                if step == len(preguntas) - 1:
+                    print(f"[HANDLER] Última pregunta contestada, ejecutando handler {handler_code}")
+                    
+                    # Ejecutar handler con grupo_id de Dataverse
+                    grupo_id = state.get("grupo_id")
+                    mensaje_respuesta = handler_manager.ejecutar_handler(
+                        codigo=handler_code,
+                        from_user=phone,
+                        respuestas=state["respuestas"],
+                        grupo_id=grupo_id
+                    )
+                    
+                    # Limpiar estado
+                    del conversation_states[phone]
+                    
+                    if mensaje_respuesta:
+                        return f"{mensaje_respuesta}\n\n{get_menu_text()}"
+                    else:
+                        return f"⚠️ Error al procesar su solicitud.\n\n{get_menu_text()}"
+                
                 else:
-                    return f"Lo sentimos, hubo un error al procesar su solicitud. Por favor intente nuevamente.\n\n{get_menu_text()}"
-            else:
-                # Avanzar al siguiente paso
-                state["step"] = step + 1
-                siguiente_pregunta = preguntas[state["step"]]
-                return opcion["mensajes"].get(siguiente_pregunta, "Por favor proporcione la información:")
+                    # Avanzar al siguiente paso
+                    state["step"] = step + 1
+                    siguiente_pregunta = preguntas[state["step"]]
+                    return siguiente_pregunta
         
-    # Si no hay conversación activa, verificar si es una opción del menú
+        else:
+            # FLUJO LEGACY (sin handlers)
+            preguntas = opcion.get("preguntas", [])
+            step = state.get("step", 0)
+            
+            # Si hay preguntas pendientes
+            if step < len(preguntas):
+                pregunta_actual = preguntas[step]
+                
+                # Guardar respuesta anterior (si no es el primer paso)
+                if step > 0:
+                    pregunta_anterior = preguntas[step - 1]
+                    state["data"][pregunta_anterior] = message_text
+                
+                # Si es el último paso, guardar y crear ticket
+                if step == len(preguntas) - 1:
+                    state["data"][pregunta_actual] = message_text
+                    
+                    # Crear ticket con los datos recopilados
+                    ticket_data = {
+                        "tipo": opcion.get("tipo"),
+                        **state["data"]
+                    }
+                    ticket_id = create_ticket_from_conversation(phone, ticket_data)
+                    
+                    # Limpiar estado
+                    del conversation_states[phone]
+                    
+                    if ticket_id:
+                        return f"¡Gracias! Su solicitud ha sido registrada con el ticket #{ticket_id}. Nos pondremos en contacto pronto.\n\n{get_menu_text()}"
+                    else:
+                        return f"Lo sentimos, hubo un error al procesar su solicitud. Por favor intente nuevamente.\n\n{get_menu_text()}"
+                else:
+                    # Avanzar al siguiente paso
+                    state["step"] = step + 1
+                    siguiente_pregunta = preguntas[state["step"]]
+                    return opcion["mensajes"].get(siguiente_pregunta, "Por favor proporcione la información:")
+    
+    # Si no hay conversación activa, verificar si es selección de categoría principal
     if message_text.strip() in menu_opciones:
         opcion_id = message_text.strip()
         opcion = menu_opciones[opcion_id]
         
-        # Si la opción no tiene preguntas, responder directamente
-        if not opcion.get("preguntas"):
-            respuesta = opcion.get("respuesta", opcion.get("descripcion", "Opción no disponible"))
-            return f"{respuesta}\n\n{get_menu_text()}"
+        print(f"[MENU] Categoría seleccionada: {opcion['nombre']}")
         
-        # Iniciar conversación
+        # Guardar estado "esperando elemento"
         conversation_states[phone] = {
-            "opcion": opcion_id,
-            "step": 0,
-            "data": {},
-            "grupo_id": opcion.get("grupo_id")
+            "modo": "esperando_elemento",
+            "categoria_id": opcion_id,
+            "categoria_nombre": opcion['nombre']
         }
         
-        primera_pregunta = opcion["preguntas"][0]
-        return opcion["mensajes"].get(primera_pregunta, "Por favor proporcione la información:")
+        # Mostrar submenú con elementos de esta categoría
+        return get_submenu_text(opcion_id)
     
-    # Si no es una opción válida, mostrar menú
+    # Si escribe "0" o "menu", volver al menú principal
+    if message_text.strip() in ["0", "menu", "menú", "inicio"]:
+        if phone in conversation_states:
+            del conversation_states[phone]
+        return get_menu_text()
+    
+    # Si no es una opción válida, mostrar menú principal
     return get_menu_text()
 
 

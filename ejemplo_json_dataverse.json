@@ -1,0 +1,115 @@
+{
+  "version": "1.0",
+  "chatbot_id": "Chatbot1",
+  "descripcion": "Chatbot principal de atención al cliente",
+  "fecha_actualizacion": "2026-02-11T10:30:00Z",
+  
+  "menus": [
+    {
+      "numero": "1",
+      "nombre": "Solicitud Ticket",
+      "descripcion": "Crear tickets de soporte técnico",
+      "activo": true,
+      
+      "submenus": [
+        {
+          "numero": "1.1",
+          "nombre": "Incidente Técnico",
+          "descripcion": "Reportar problemas técnicos que impiden trabajar",
+          "handler": "A001",
+          "grupo_id": "{12345678-1234-1234-1234-123456789ABC}",
+          "activo": true,
+          "tags": ["soporte", "tecnico", "urgente"],
+          "_comentario": "grupo_id debe ser GUID real de tabla cr321_grupos"
+        },
+        {
+          "numero": "1.2",
+          "nombre": "Solicitud de Servicio",
+          "descripcion": "Solicitudes estándar de servicios",
+          "handler": "B001",
+          "grupo_id": "{ABCDEFGH-1234-1234-1234-123456789ABC}",
+          "activo": true,
+          "tags": ["soporte", "servicio"]
+        },
+        {
+          "numero": "1.3",
+          "nombre": "Cambio RFC",
+          "descripcion": "Solicitar cambios programados",
+          "handler": "C001",
+          "grupo_id": "{GUID-CAB}",
+          "activo": true,
+          "requiere_aprobacion": true,
+          "tags": ["cambios", "rfc", "cab"]
+        }
+      ]
+    },
+    
+    {
+      "numero": "2",
+      "nombre": "Ventas",
+      "descripcion": "Consultas y cotizaciones de ventas",
+      "activo": true,
+      
+      "submenus": [
+        {
+          "numero": "2.1",
+          "nombre": "Solicitar Cotización",
+          "descripcion": "Pedir cotización de productos",
+          "handler": "D001",
+          "grupo_id": "{GUID-VENTAS}",
+          "activo": true,
+          "tags": ["ventas", "cotizacion"]
+        },
+        {
+          "numero": "2.2",
+          "nombre": "Ver Catálogo",
+          "descripcion": "Descargar catálogo de productos en PDF",
+          "handler": "E001",
+          "grupo_id": null,
+          "activo": true,
+          "tags": ["ventas", "catalogo", "pdf"],
+          "sin_asignacion": true
+        }
+      ]
+    },
+    
+    {
+      "numero": "3",
+      "nombre": "Solicitar Atención",
+      "descripcion": "Atención directa con un agente",
+      "activo": true,
+      
+      "submenus": [
+        {
+          "numero": "3.1",
+          "nombre": "Asignación Directa",
+          "descripcion": "Asignar a un agente sin preguntas",
+          "handler": "G001",
+          "grupo_id": "{GUID-MESA-AYUDA}",
+          "activo": true,
+          "tags": ["atencion", "directo"]
+        },
+        {
+          "numero": "3.2",
+          "nombre": "Urgencia",
+          "descripcion": "Atención urgente con notificación inmediata",
+          "handler": "H001",
+          "grupo_id": "{GUID-SUPERVISORES}",
+          "activo": true,
+          "prioridad": "urgente",
+          "notificar_sms": true,
+          "tags": ["urgencia", "prioridad"]
+        }
+      ]
+    }
+  ],
+  
+  "configuracion_general": {
+    "timeout_respuesta": 300,
+    "max_reintentos": 3,
+    "mensaje_bienvenida": "Hola, ¿en qué puedo ayudarte?",
+    "mensaje_despedida": "Gracias por contactarnos",
+    "mensaje_error": "Lo siento, hubo un error. Por favor intenta de nuevo.",
+    "mensaje_timeout": "No recibí tu respuesta. ¿Sigues ahí?"
+  }
+}

@@ -31,7 +31,7 @@ def ver_todos_chatbots():
     
     # Consultar TODOS los chatbots (activos e inactivos)
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots"
-    url += "?$select=cr321_chatbotid,cr321_name,cr321_active,cr321_elemento1,cr321_elemento2,cr321_elemento3,cr321_elemento4,cr321_elemento5"
+    url += "?$select=cr321_chatbotid,cr321_name,cr321_active,cr321_elemento1,cr321_elemento2,cr321_elemento3,cr321_grupoid"
     url += "&$orderby=cr321_name asc"
     
     headers = {
@@ -76,9 +76,7 @@ def ver_todos_chatbots():
                 elementos = [
                     chatbot.get("cr321_elemento1"),
                     chatbot.get("cr321_elemento2"),
-                    chatbot.get("cr321_elemento3"),
-                    chatbot.get("cr321_elemento4"),
-                    chatbot.get("cr321_elemento5")
+                    chatbot.get("cr321_elemento3")
                 ]
                 
                 opciones = [e for e in elementos if e and e.strip()]
@@ -100,9 +98,7 @@ def ver_todos_chatbots():
                 elementos = [
                     chatbot.get("cr321_elemento1"),
                     chatbot.get("cr321_elemento2"),
-                    chatbot.get("cr321_elemento3"),
-                    chatbot.get("cr321_elemento4"),
-                    chatbot.get("cr321_elemento5")
+                    chatbot.get("cr321_elemento3")
                 ]
                 
                 opciones = [e for e in elementos if e and e.strip()]

@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "chatbot_id": "Chatbot1",
+  "descripcion": "Chatbot principal - Configurado con grupos reales",
+  "fecha_actualizacion": "2026-02-11",
+  
+  "menus": [
+    {
+      "numero": "1",
+      "nombre": "Soporte Técnico",
+      "descripcion": "Solicitudes de soporte y asistencia técnica",
+      "activo": true,
+      
+      "submenus": [
+        {
+          "numero": "1.1",
+          "nombre": "Incidente Técnico",
+          "descripcion": "Reportar problemas técnicos urgentes",
+          "handler": "A001",
+          "grupo_id": "{067c7ba2-9f03-f111-8d07-7ced8da87d73}",
+          "activo": true,
+          "tags": ["soporte", "tecnico", "urgente"]
+        },
+        {
+          "numero": "1.2",
+          "nombre": "Consulta General",
+          "descripcion": "Consultas generales de soporte",
+          "handler": "B001",
+          "grupo_id": "{3fc21e02-1c06-f111-8d07-7ced8da87c97}",
+          "activo": true,
+          "tags": ["soporte", "consulta", "general"]
+        }
+      ]
+    },
+    
+    {
+      "numero": "2",
+      "nombre": "Ventas",
+      "descripcion": "Solicitudes comerciales y cotizaciones",
+      "activo": true,
+      
+      "submenus": [
+        {
+          "numero": "2.1",
+          "nombre": "Solicitar Cotización",
+          "descripcion": "Pedir cotización de productos o servicios",
+          "handler": "C001",
+          "grupo_id": "{32dc7358-5704-f111-8d07-7ced8da87c97}",
+          "activo": true,
+          "tags": ["ventas", "cotizacion", "comercial"]
+        },
+        {
+          "numero": "2.2",
+          "nombre": "Información de Productos",
+          "descripcion": "Consultar información sobre productos",
+          "handler": "D001",
+          "grupo_id": "{32dc7358-5704-f111-8d07-7ced8da87c97}",
+          "activo": true,
+          "tags": ["ventas", "productos", "catalogo"]
+        }
+      ]
+    },
+    
+    {
+      "numero": "3",
+      "nombre": "Administración",
+      "descripcion": "Solicitudes administrativas",
+      "activo": true,
+      
+      "submenus": [
+        {
+          "numero": "3.1",
+          "nombre": "Solicitud Administrativa",
+          "descripcion": "Solicitudes administrativas generales",
+          "handler": "E001",
+          "grupo_id": "{e2927859-5704-f111-8d07-7ced8da87d73}",
+          "activo": true,
+          "tags": ["administracion", "gestion"]
+        }
+      ]
+    },
+    
+    {
+      "numero": "4",
+      "nombre": "Contabilidad",
+      "descripcion": "Consultas y solicitudes contables",
+      "activo": true,
+      
+      "submenus": [
+        {
+          "numero": "4.1",
+          "nombre": "Consulta Contable",
+          "descripcion": "Consultas sobre facturación y pagos",
+          "handler": "F001",
+          "grupo_id": "{968a9262-5704-f111-8d07-00224ddf122f}",
+          "activo": true,
+          "tags": ["contabilidad", "facturacion", "pagos"]
+        },
+        {
+          "numero": "4.2",
+          "nombre": "Reporte de Pagos",
+          "descripcion": "Reportar pagos realizados",
+          "handler": "G001",
+          "grupo_id": "{968a9262-5704-f111-8d07-00224ddf122f}",
+          "activo": true,
+          "tags": ["contabilidad", "pagos", "reportes"]
+        }
+      ]
+    }
+  ],
+  
+  "configuracion_general": {
+    "timeout_respuesta": 300,
+    "max_reintentos": 3,
+    "mensaje_bienvenida": "¡Hola! 👋 ¿En qué puedo ayudarte hoy?",
+    "mensaje_despedida": "Gracias por contactarnos. ¡Hasta pronto! 😊",
+    "mensaje_error": "Lo siento, hubo un error. Por favor intenta nuevamente.",
+    "mensaje_timeout": "¿Sigues ahí? Escribe 'si' para continuar."
+  }
+}
