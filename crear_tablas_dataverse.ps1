@@ -8,7 +8,7 @@ Script para crear las tablas necesarias del sistema de chatbot WhatsApp en Datav
 .DESCRIPTION
 Crea las siguientes tablas:
 - cr321_grupos
-- cr321_estados  
+- cr321_estados
 - cr321_tickets
 - cr321_usuario_grupos
 
@@ -27,8 +27,12 @@ Write-Host "  CREACIÓN DE TABLAS EN DATAVERSE" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Nota: Este script es una GUÍA. Las tablas deben crearse en Power Platform Admin Center
-# o usando la API Web de Dataverse con solicitudes HTTP
+# Alternativa con Python (crea tablas vía Web API):
+#   python crear_tablas_dataverse.py           # Crear tablas
+#   python crear_tablas_dataverse.py --dry-run # Simular
+#   python crear_tablas_dataverse.py --list   # Listar tablas cr321_ existentes
+#
+# Nota: Las relaciones (Lookup) se crean después en Power Apps o manualmente.
 
 Write-Host "INSTRUCCIONES PARA CREAR TABLAS EN DATAVERSE" -ForegroundColor Yellow
 Write-Host ""

@@ -1,13 +1,16 @@
 """
 Verificar disponibilidad del campo cr321_grupo con diferentes métodos
 """
-import sys
+
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "backend"))
 
 import requests
 from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(__file__), 'backend', '.env'))
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "backend", ".env"))
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
@@ -20,7 +23,7 @@ auth_data = {
     "client_id": CLIENT_ID,
     "client_secret": CLIENT_SECRET,
     "scope": f"{DATAVERSE_URL}/.default",
-    "grant_type": "client_credentials"
+    "grant_type": "client_credentials",
 }
 
 auth_response = requests.post(auth_url, data=auth_data)
@@ -39,7 +42,9 @@ if r1.status_code == 200:
         print(f"   ✅ Campo existe - Valor: {msg.get('cr321_grupo')}")
     else:
         print(f"   ❌ Campo no aparece")
-        print(f"   Campos disponibles: {', '.join([k for k in msg.keys() if not k.startswith('@')][:10])}...")
+        print(
+            f"   Campos disponibles: {', '.join([k for k in msg.keys() if not k.startswith('@')][:10])}..."
+        )
 
 # Método 2: Consulta con $select
 print("\n2. Consulta con $select=cr321_grupo:")
@@ -69,10 +74,10 @@ if r_test.status_code == 200:
         headers_update = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "If-Match": "*"
+            "If-Match": "*",
         }
         payload = {"cr321_grupo": 4}
-        
+
         r_update = requests.patch(url_update, json=payload, headers=headers_update)
         if r_update.status_code in [200, 204]:
             print(f"   ✅ Actualización exitosa - Campo es editable")
@@ -85,7 +90,7 @@ if r_test.status_code == 200:
         else:
             print(f"   ⚠️ Error {r_update.status_code}")
 
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 print("\n💡 Recomendaciones:")
 print("   1. Verifica que el campo se haya guardado en Dataverse")
 print("   2. Refresca la página de Dataverse")

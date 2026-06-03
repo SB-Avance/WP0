@@ -1,6 +1,7 @@
 """
 Migración: Sincronizar campo integer cr321_grupo → lookup _cr321_grupoid_value
 """
+
 import requests
 from msal import ConfidentialClientApplication
 
@@ -9,12 +10,16 @@ CLIENT_SECRET = "QYG8Q~J38KfJGUSIy-O2h-o_9pRTNuTNC7909aWg"
 TENANT_ID = "41ddee82-dfb3-4c4a-bbe6-de9c741c754e"
 DATAVERSE_URL = "https://org460b8a6c.crm2.dynamics.com"
 
+
 def get_token():
     authority = f"https://login.microsoftonline.com/{TENANT_ID}"
     scope = [f"{DATAVERSE_URL}/.default"]
-    app = ConfidentialClientApplication(CLIENT_ID, authority=authority, client_credential=CLIENT_SECRET)
+    app = ConfidentialClientApplication(
+        CLIENT_ID, authority=authority, client_credential=CLIENT_SECRET
+    )
     result = app.acquire_token_for_client(scopes=scope)
     return result["access_token"]
+
 
 print("=" * 70)
 print("MIGRACIÓN: INTEGER → LOOKUP")
@@ -25,7 +30,7 @@ headers = {
     "Authorization": f"Bearer {token}",
     "Accept": "application/json",
     "Content-Type": "application/json",
-    "Prefer": "return=representation"
+    "Prefer": "return=representation",
 }
 
 # 1. Obtener mapeo de grupos
@@ -37,17 +42,17 @@ INT_TO_GUID = {}
 if response.status_code == 200:
     grupos = response.json().get("value", [])
     print(f"   ✅ {len(grupos)} grupos encontrados:")
-    
+
     # Mapear: 0→0000, 1→0001, etc.
     for g in grupos:
         codigo = g.get("cr321_grupoid")  # "0000", "0001", etc.
         guid = g.get("cr321_grupid")
         nombre = g.get("cr321_nombre")
-        
+
         # Convertir código a integer: "0000"→0, "0001"→1, etc.
         int_val = int(codigo)
         INT_TO_GUID[int_val] = {"guid": guid, "nombre": nombre, "codigo": codigo}
-        
+
         print(f"      {int_val} → {nombre} ({guid})")
 else:
     print(f"   ❌ Error: {response.status_code}")
@@ -74,20 +79,22 @@ for msg in mensajes:
     phone = msg.get("cr321_phone")
     grupo_int = msg.get("cr321_grupo")
     lookup_actual = msg.get("_cr321_grupoid_value")
-    
+
     # Verificar si necesita actualización
     if grupo_int is not None and grupo_int in INT_TO_GUID:
         guid_esperado = INT_TO_GUID[grupo_int]["guid"]
-        
+
         # Si el lookup es diferente al esperado, actualizar
         if lookup_actual != guid_esperado:
-            actualizar.append({
-                "id": msg_id,
-                "phone": phone,
-                "grupo_int": grupo_int,
-                "guid_esperado": guid_esperado,
-                "nombre": INT_TO_GUID[grupo_int]["nombre"]
-            })
+            actualizar.append(
+                {
+                    "id": msg_id,
+                    "phone": phone,
+                    "grupo_int": grupo_int,
+                    "guid_esperado": guid_esperado,
+                    "nombre": INT_TO_GUID[grupo_int]["nombre"],
+                }
+            )
 
 print(f"   📋 {len(actualizar)} mensajes necesitan actualización")
 print(f"   ✅ {len(mensajes) - len(actualizar)} mensajes ya sincronizados")
@@ -110,7 +117,7 @@ for nombre, count in sorted(resumen.items()):
 print(f"\n⚠️  Se actualizarán {len(actualizar)} mensajes")
 respuesta = input("¿Continuar? (s/n): ")
 
-if respuesta.lower() != 's':
+if respuesta.lower() != "s":
     print("\n❌ Cancelado por el usuario")
     exit(0)
 
@@ -124,15 +131,13 @@ for item in actualizar:
     progreso += 1
     msg_id = item["id"]
     guid = item["guid_esperado"]
-    
+
     # Usar OData binding para el lookup
-    update_data = {
-        "cr321_grupoid@odata.bind": f"/cr321_grups({guid})"
-    }
-    
+    update_data = {"cr321_grupoid@odata.bind": f"/cr321_grups({guid})"}
+
     url_update = f"{DATAVERSE_URL}/api/data/v9.2/cr321_adatawp0s({msg_id})"
     resp = requests.patch(url_update, headers=headers, json=update_data)
-    
+
     if resp.status_code in [200, 204]:
         actualizados += 1
         if progreso % 10 == 0:
@@ -155,17 +160,17 @@ if response.status_code == 200:
     mensajes = response.json().get("value", [])
     sincronizados = 0
     desincronizados = 0
-    
+
     for msg in mensajes:
         grupo_int = msg.get("cr321_grupo")
         lookup = msg.get("_cr321_grupoid_value")
-        
+
         if grupo_int is not None and grupo_int in INT_TO_GUID:
             if lookup == INT_TO_GUID[grupo_int]["guid"]:
                 sincronizados += 1
             else:
                 desincronizados += 1
-    
+
     print(f"   ✅ Sincronizados: {sincronizados}")
     print(f"   ⚠️  Desincronizados: {desincronizados}")
 

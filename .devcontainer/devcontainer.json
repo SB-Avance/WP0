@@ -1,0 +1,10 @@
+{
+  "name": "WhatsApp Manager Dev",
+  "image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "bash ./rebuild/scripts/setup_dev.sh || powershell -File .\\rebuild\\scripts\\setup_dev.ps1",
+  "extensions": [
+    "ms-python.python",
+    "ms-azuretools.vscode-docker"
+  ]
+}

@@ -51,7 +51,7 @@ EJEMPLO DE REGISTROS REALES:
           "numero": "1.1",
           "nombre": "Incidente Técnico",
           "handler": "A001",
-          
+
           ┌─────────────────────────────────────────────────┐
           │ "grupo_id": "{a1b2c3d4-1234-5678-90ab-cdef...}" │ ◄─┐
           └─────────────────────────────────────────────────┘   │
@@ -87,7 +87,7 @@ FLUJO COMPLETO:
    │
    └─► cr321_grupoid (lookup) ──► Apunta a cr321_grupos
                                    donde cr321_grupoid = a1b2c3d4...
-   
+
 5. Resultado: Ticket asignado a "Soporte Técnico"
 ```
 

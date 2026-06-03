@@ -3,7 +3,7 @@
   "chatbot_id": "Chatbot1",
   "descripcion": "Chatbot principal - Configurado con grupos reales de Dataverse",
   "fecha_actualizacion": "2026-02-11T10:30:00Z",
-  
+
   "_GRUPOS_DISPONIBLES_EN_TU_DATAVERSE": {
     "_nota": "Estos son TUS grupos reales de la tabla cr321_grupos - GUIDs COMPLETOS",
     "grupos": [
@@ -43,25 +43,25 @@
       }
     ]
   },
-  
+
   "menus": [
     {
       "numero": "1",
       "nombre": "Soporte Técnico",
       "descripcion": "Solicitudes de soporte y asistencia técnica",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "1.1",
           "nombre": "Incidente Técnico",
           "descripcion": "Reportar problemas técnicos urgentes",
           "handler": "A001",
-          
+
           "_CONEXION": "Este submenu se asigna al grupo 'Soporte' (0001)",
           "grupo_id": "{067c7ba2-9f03-f111-8d07-7ced8da87d73}",
           "_grupo_nombre": "Soporte",
-          
+
           "activo": true,
           "tags": ["soporte", "tecnico", "urgente"]
         },
@@ -70,34 +70,34 @@
           "nombre": "Consulta General",
           "descripcion": "Consultas generales de soporte",
           "handler": "B001",
-          
+
           "_CONEXION": "Este submenu se asigna al grupo 'General' (0000)",
           "grupo_id": "{3fc21e02-1c06-f111-8d07-7ced8da87c97}",
           "_grupo_nombre": "General",
-          
+
           "activo": true,
           "tags": ["soporte", "consulta", "general"]
         }
       ]
     },
-    
+
     {
       "numero": "2",
       "nombre": "Ventas y Cotizaciones",
       "descripcion": "Solicitudes comerciales y cotizaciones",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "2.1",
           "nombre": "Solicitar Cotización",
           "descripcion": "Pedir cotización de productos o servicios",
           "handler": "C001",
-          
+
           "_CONEXION": "Este submenu se asigna al grupo 'Ventas' (0002)",
           "grupo_id": "{32dc7358-5704-f111-8d07-7ced8da87c97}",
           "_grupo_nombre": "Ventas",
-          
+
           "activo": true,
           "tags": ["ventas", "cotizacion", "comercial"]
         },
@@ -106,57 +106,57 @@
           "nombre": "Información de Productos",
           "descripcion": "Consultar información sobre productos",
           "handler": "D001",
-          
+
           "_CONEXION": "Este submenu se asigna al grupo 'Ventas' (0002)",
           "grupo_id": "{32dc7358-5704-f111-8d07-7ced8da87c97}",
           "_grupo_nombre": "Ventas",
-          
+
           "activo": true,
           "tags": ["ventas", "productos", "catalogo"]
         }
       ]
     },
-    
+
     {
       "numero": "3",
       "nombre": "Administración",
       "descripcion": "Solicitudes administrativas",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "3.1",
           "nombre": "Solicitud Administrativa",
           "descripcion": "Solicitudes administrativas generales",
           "handler": "E001",
-          
+
           "_CONEXION": "Este submenu se asigna al grupo 'Administracion' (0003)",
           "grupo_id": "{e2927859-5704-f111-8d07-7ced8da87d73}",
           "_grupo_nombre": "Administracion",
-          
+
           "activo": true,
           "tags": ["administracion", "gestion"]
         }
       ]
     },
-    
+
     {
       "numero": "4",
       "nombre": "Contabilidad",
       "descripcion": "Consultas y solicitudes contables",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "4.1",
           "nombre": "Consulta Contable",
           "descripcion": "Consultas sobre facturación y pagos",
           "handler": "F001",
-          
+
           "_CONEXION": "Este submenu se asigna al grupo 'Contabilidad' (0004)",
           "grupo_id": "{968a9262-5704-f111-8d07-00224ddf122f}",
           "_grupo_nombre": "Contabilidad",
-          
+
           "activo": true,
           "tags": ["contabilidad", "facturacion", "pagos"]
         },
@@ -165,18 +165,18 @@
           "nombre": "Reporte de Pagos",
           "descripcion": "Reportar pagos realizados",
           "handler": "G001",
-          
+
           "_CONEXION": "Este submenu se asigna al grupo 'Contabilidad' (0004)",
           "grupo_id": "{968a9262-5704-f111-8d07-00224ddf122f}",
           "_grupo_nombre": "Contabilidad",
-          
+
           "activo": true,
           "tags": ["contabilidad", "pagos", "reportes"]
         }
       ]
     }
   ],
-  
+
   "configuracion_general": {
     "timeout_respuesta": 300,
     "max_reintentos": 3,
@@ -185,7 +185,7 @@
     "mensaje_error": "Lo siento, hubo un error. Por favor intenta nuevamente.",
     "mensaje_timeout": "¿Sigues ahí? Escribe 'si' para continuar."
   },
-  
+
   "_RESUMEN_CONFIGURACION": {
     "total_menus": 4,
     "total_submenus": 7,
@@ -197,7 +197,7 @@
       "Contabilidad (0004)": 2
     }
   },
-  
+
   "_INSTRUCCIONES_USO": {
     "paso_1": "Copia este JSON completo",
     "paso_2": "Inserta en campo cr321_config de la tabla cr321_chatbots",

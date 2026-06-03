@@ -3,14 +3,14 @@
   "chatbot_id": "Chatbot1",
   "descripcion": "Chatbot principal - Configurado con grupos reales",
   "fecha_actualizacion": "2026-02-11",
-  
+
   "menus": [
     {
       "numero": "1",
       "nombre": "Soporte Técnico",
       "descripcion": "Solicitudes de soporte y asistencia técnica",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "1.1",
@@ -32,13 +32,13 @@
         }
       ]
     },
-    
+
     {
       "numero": "2",
       "nombre": "Ventas",
       "descripcion": "Solicitudes comerciales y cotizaciones",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "2.1",
@@ -60,13 +60,13 @@
         }
       ]
     },
-    
+
     {
       "numero": "3",
       "nombre": "Administración",
       "descripcion": "Solicitudes administrativas",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "3.1",
@@ -79,13 +79,13 @@
         }
       ]
     },
-    
+
     {
       "numero": "4",
       "nombre": "Contabilidad",
       "descripcion": "Consultas y solicitudes contables",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "4.1",
@@ -108,7 +108,7 @@
       ]
     }
   ],
-  
+
   "configuracion_general": {
     "timeout_respuesta": 300,
     "max_reintentos": 3,

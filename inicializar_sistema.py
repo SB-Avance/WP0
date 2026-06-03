@@ -4,13 +4,15 @@ Crea los grupos tipo "A" y el chatbot principal
 
 Este script debe ejecutarse UNA SOLA VEZ después de crear las tablas en Dataverse
 """
-import requests
+
 import os
+
+import requests
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 
 # Cargar .env desde el directorio backend
-env_path = os.path.join(os.path.dirname(__file__), 'backend', '.env')
+env_path = os.path.join(os.path.dirname(__file__), "backend", ".env")
 load_dotenv(env_path)
 
 # Variables de entorno
@@ -24,15 +26,13 @@ def get_token():
     """Obtiene token de autenticación de Dataverse"""
     authority = f"https://login.microsoftonline.com/{TENANT_ID}"
     scope = [f"{DATAVERSE_URL}/.default"]
-    
+
     app = ConfidentialClientApplication(
-        CLIENT_ID,
-        authority=authority,
-        client_credential=CLIENT_SECRET
+        CLIENT_ID, authority=authority, client_credential=CLIENT_SECRET
     )
-    
+
     result = app.acquire_token_for_client(scopes=scope)
-    
+
     if "access_token" in result:
         return result["access_token"]
     else:
@@ -43,11 +43,8 @@ def get_token():
 def check_grupos_exist(token):
     """Verifica cuáles grupos tipo A ya existen"""
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_grups?$filter=cr321_tipo eq 462410000&$select=cr321_nombre"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json"
-    }
-    
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
@@ -67,37 +64,37 @@ def create_grupos_iniciales(token):
     print(f"  Grupos existentes: {len(grupos_existentes)}")
     for g in grupos_existentes:
         print(f"    - {g}")
-    
+
     grupos = [
         {
             "cr321_nombre": "Solicitud Ticket",
             "cr321_tipo": 462410000,  # Tipo A
-            "cr321_descripcion": "Crear ticket de solicitud de soporte técnico"
+            "cr321_descripcion": "Crear ticket de solicitud de soporte técnico",
         },
         {
             "cr321_nombre": "Cotizaciones",
             "cr321_tipo": 462410000,  # Tipo A
-            "cr321_descripcion": "Solicitar cotización de productos o servicios"
+            "cr321_descripcion": "Solicitar cotización de productos o servicios",
         },
         {
             "cr321_nombre": "Información",
             "cr321_tipo": 462410000,  # Tipo A
-            "cr321_descripcion": "Obtener información general de la empresa"
+            "cr321_descripcion": "Obtener información general de la empresa",
         },
         {
             "cr321_nombre": "Solicitar atención de agente",
             "cr321_tipo": 462410000,  # Tipo A
-            "cr321_descripcion": "Conectarse con un agente humano"
-        }
+            "cr321_descripcion": "Conectarse con un agente humano",
+        },
     ]
-    
+
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_grups"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
     }
-    
+
     created = 0
     skipped = 0
     for grupo in grupos:
@@ -106,18 +103,20 @@ def create_grupos_iniciales(token):
             print(f"[SALTAR] Grupo ya existe: {grupo['cr321_nombre']}")
             skipped += 1
             continue
-            
+
         try:
             response = requests.post(url, json=grupo, headers=headers, timeout=10)
             if response.status_code in [200, 201, 204]:
                 print(f"[OK] Grupo creado: {grupo['cr321_nombre']}")
                 created += 1
             else:
-                print(f"[ERROR] No se pudo crear '{grupo['cr321_nombre']}': {response.status_code}")
+                print(
+                    f"[ERROR] No se pudo crear '{grupo['cr321_nombre']}': {response.status_code}"
+                )
                 print(f"  Detalle: {response.text}")
         except Exception as e:
             print(f"[ERROR] Excepción al crear '{grupo['cr321_nombre']}': {e}")
-    
+
     print(f"\n  Resumen: {created} creados, {skipped} ya existían")
     return created > 0
 
@@ -125,11 +124,8 @@ def create_grupos_iniciales(token):
 def check_chatbot_exist(token):
     """Verifica si ya existe el chatbot principal"""
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots?$filter=contains(cr321_name, 'Menu Principal')&$top=1"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json"
-    }
-    
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
@@ -145,21 +141,21 @@ def create_chatbot_principal(token):
     """Crea el chatbot principal del menú de WhatsApp"""
     # Config simplificado para caber en 100 caracteres
     chatbot_config = '{"menu_dinamico":true,"fuente":"cr321_grup","tipo":"A"}'
-    
+
     chatbot = {
         "cr321_name": "Menu Principal WhatsApp",
         "cr321_type": 462410000,  # FlowBot
         "cr321_config": chatbot_config,
-        "cr321_active": True
+        "cr321_active": True,
     }
-    
+
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
     }
-    
+
     try:
         response = requests.post(url, json=chatbot, headers=headers, timeout=10)
         if response.status_code in [200, 201, 204]:
@@ -179,7 +175,7 @@ def main():
     print("   INICIALIZACION DEL SISTEMA WHATSAPP CRM")
     print("=" * 60)
     print()
-    
+
     # Obtener token
     print("[1/4] Obteniendo token de autenticación...")
     token = get_token()
@@ -193,12 +189,12 @@ def main():
         return
     print("[OK] Token obtenido exitosamente")
     print()
-    
+
     # Verificar y crear grupos
     print("[2/4] Verificando grupos tipo A...")
     create_grupos_iniciales(token)
     print()
-    
+
     # Verificar y crear chatbot
     print("[3/4] Verificando chatbot principal...")
     if check_chatbot_exist(token):
@@ -211,12 +207,14 @@ def main():
         else:
             print("[ERROR] No se pudo crear el chatbot principal")
     print()
-    
+
     # Resumen
     print("[4/4] Inicialización completada")
     print()
     print("SIGUIENTE PASO:")
-    print("  1. Verifica los grupos en make.powerapps.com -> Dataverse -> Tablas -> Grupos")
+    print(
+        "  1. Verifica los grupos en make.powerapps.com -> Dataverse -> Tablas -> Grupos"
+    )
     print("  2. Verifica el chatbot en la interfaz de administración")
     print("  3. Reinicia el backend: .\\iniciar_backend.ps1")
     print("  4. El menú de WhatsApp ahora se cargará dinámicamente")

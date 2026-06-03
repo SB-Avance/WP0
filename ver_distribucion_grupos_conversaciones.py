@@ -1,12 +1,14 @@
 """
 Ver distribución de grupos en conversaciones
 """
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
 
-from goot import get_token, DATAVERSE_URL
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "backend"))
+
 import requests
+from goot import DATAVERSE_URL, get_token
 
 token = get_token()
 headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
@@ -23,37 +25,37 @@ response = requests.get(url, headers=headers)
 if response.status_code == 200:
     data = response.json()
     conversaciones = data.get("value", [])
-    
+
     # Agrupar por conversationid
     conv_map = {}
     for msg in conversaciones:
         conv_id = msg.get("cr321_conversationid")
         grupo = msg.get("cr321_grupo")
-        
+
         if conv_id not in conv_map:
             conv_map[conv_id] = grupo
-    
+
     # Mapeo de grupos
     GRUPO_MAP = {
         1: "Soporte",
         2: "Ventas",
         3: "Administracion",
         4: "Contabilidad",
-        None: "GENERAL"
+        None: "GENERAL",
     }
-    
+
     # Contar por grupo
     grupo_count = {}
     for grupo in conv_map.values():
         nombre = GRUPO_MAP.get(grupo, f"Desconocido ({grupo})")
         grupo_count[nombre] = grupo_count.get(nombre, 0) + 1
-    
+
     print(f"Total conversaciones únicas: {len(conv_map)}\n")
     print("Distribución por grupo:")
     for nombre, count in sorted(grupo_count.items()):
         print(f"  {nombre}: {count} conversación(es)")
-    
-    print("\n" + "="*50)
+
+    print("\n" + "=" * 50)
     print("\n⚠️  Usuario 0006 pertenece a: Contabilidad")
     contab_count = grupo_count.get("Contabilidad", 0)
     if contab_count == 0:

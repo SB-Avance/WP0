@@ -159,9 +159,9 @@ cr321_elemento5, cr321_handler5, cr321_grupo5  -- Opción 1.5
 "submenus": [
   { "numero": "1.1", "nombre": "Incidente", "activo": true },
   { "numero": "1.2", "nombre": "Solicitud", "activo": true },
-  { 
-    "numero": "1.3", 
-    "nombre": "Cambio RFC", 
+  {
+    "numero": "1.3",
+    "nombre": "Cambio RFC",
     "activo": false  ← Solo desactivar
   },
   { "numero": "1.4", "nombre": "Consulta", "activo": true }
@@ -268,7 +268,7 @@ def obtener_config_actual(chatbot_name: str) -> dict:
             "$select": "cr321_chatbotid,cr321_config"
         }
     )
-    
+
     data = response.json()["value"][0]
     return {
         'guid': data['cr321_chatbotid'],
@@ -278,53 +278,53 @@ def obtener_config_actual(chatbot_name: str) -> dict:
 
 def agregar_submenu(config: dict, numero_menu: str, nueva_opcion: dict):
     """Agrega una nueva opción a un menú existente"""
-    
+
     for menu in config['menus']:
         if menu['numero'] == numero_menu:
             menu['submenus'].append(nueva_opcion)
             print(f"✓ Nueva opción agregada al menú {numero_menu}")
             return config
-    
+
     raise Exception(f"Menú {numero_menu} no encontrado")
 
 
 def eliminar_submenu(config: dict, numero_submenu: str):
     """Elimina una opción específica"""
-    
+
     for menu in config['menus']:
         menu['submenus'] = [
-            sub for sub in menu['submenus'] 
+            sub for sub in menu['submenus']
             if sub['numero'] != numero_submenu
         ]
-    
+
     print(f"✓ Opción {numero_submenu} eliminada")
     return config
 
 
 def desactivar_submenu(config: dict, numero_submenu: str):
     """Desactiva una opción sin eliminarla"""
-    
+
     for menu in config['menus']:
         for submenu in menu['submenus']:
             if submenu['numero'] == numero_submenu:
                 submenu['activo'] = False
                 print(f"✓ Opción {numero_submenu} desactivada")
                 return config
-    
+
     raise Exception(f"Submenú {numero_submenu} no encontrado")
 
 
 def actualizar_config(guid: str, config: dict):
     """Guarda la configuración actualizada en Dataverse"""
-    
+
     config_json = json.dumps(config, ensure_ascii=False, indent=2)
-    
+
     response = requests.patch(
         f"{DATAVERSE_URL}/cr321_chatbots({guid})",
         headers=headers,
         json={"cr321_config": config_json}
     )
-    
+
     if response.status_code == 204:
         print("✓ Configuración actualizada en Dataverse")
     else:

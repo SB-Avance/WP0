@@ -69,7 +69,7 @@
 ```
 Alto │                          OPCIÓN 2 ●
      │                         (Normalizada)
-     │                  
+     │
 B    │                 OPCIÓN 4 ●
 e    │                (Híbrido)
 n    │

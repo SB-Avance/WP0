@@ -94,10 +94,10 @@ switch ($opcion) {
             Write-Host "`n✗ Configuración incompleta. Configurar variables de entorno primero." -ForegroundColor Red
             exit 1
         }
-        
+
         Write-Host "`n→ Implementando en Dataverse..." -ForegroundColor Yellow
         python implementar_todo.py
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "`n→ Ejecutando demo..." -ForegroundColor Yellow
             python demo_sistema_completo.py
@@ -111,7 +111,7 @@ switch ($opcion) {
             Write-Host "`n✗ Configuración incompleta. Configurar variables de entorno primero." -ForegroundColor Red
             exit 1
         }
-        
+
         Write-Host "`n→ Implementando en Dataverse..." -ForegroundColor Yellow
         python implementar_todo.py
     }

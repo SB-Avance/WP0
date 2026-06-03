@@ -12,14 +12,14 @@ function Mostrar-Menu {
     Write-Host "    SELECTOR DE ENTORNO - WhatsApp     " -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
-    
+
     # Mostrar entorno actual
     $actualEnv = $env:ENVIRONMENT
     if (-not $actualEnv) { $actualEnv = "LOCAL" }
     Write-Host "Entorno actual: " -NoNewline
     Write-Host "$actualEnv" -ForegroundColor Yellow
     Write-Host ""
-    
+
     Write-Host "Selecciona el entorno:" -ForegroundColor White
     Write-Host ""
     Write-Host "  [1] LOCAL" -ForegroundColor Green
@@ -39,14 +39,14 @@ function Mostrar-Menu {
 if (-not $Entorno) {
     Mostrar-Menu
     $opcion = Read-Host "Opción"
-    
+
     switch ($opcion) {
         "1" { $Entorno = "LOCAL" }
         "2" { $Entorno = "AZURE" }
         "3" { $Entorno = "PRODUCTION" }
-        "0" { 
+        "0" {
             Write-Host "Cancelado" -ForegroundColor Yellow
-            exit 0 
+            exit 0
         }
         default {
             Write-Host "Opción inválida" -ForegroundColor Red

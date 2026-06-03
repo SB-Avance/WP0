@@ -158,7 +158,7 @@ python back.py
 ```
 ✅ Verificar logs del webhook:
    - Debe decir "[✅ CONTACTO]" y "[✅ MENSAJE]"
-   
+
 ✅ Si dice error, revisar:
    - Variables de entorno (DATAVERSE_URL, etc.)
    - Permisos en Dataverse
@@ -203,7 +203,7 @@ docs/
 GET /api/dashboard/metricas-grupos
     → Estadísticas por grupo (mensajes, contactos, avg tiempo)
 
-GET /api/dashboard/metricas-generales  
+GET /api/dashboard/metricas-generales
     → Sistema completo (total msgs, usuarios activos, etc.)
 
 GET /api/dashboard/volumetria?desde=DATE&hasta=DATE
@@ -254,7 +254,7 @@ curl http://localhost:5000/api/chats/con-contacto?top=5
 curl http://localhost:5000/api/chats/con-contacto?top=10
 ```
 
-**Si todo funciona:** ✅ Producción lista  
+**Si todo funciona:** ✅ Producción lista
 **Si algo falla:** Ver sección Troubleshooting arriba
 
 ---

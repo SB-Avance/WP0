@@ -144,9 +144,9 @@ if user_rol != 'administrador':
     # Obtener grupos del usuario
     user_groups = api.get_user_groups(user_id)
     user_group_names = [g['nombre'] for g in user_groups]
-    
+
     # Filtrar conversaciones
-    conversations = [c for c in conversations 
+    conversations = [c for c in conversations
                     if c['group'] in user_group_names]
 else:
     # Admin ve todos los chats
@@ -252,11 +252,11 @@ CRUD completo - solo admin
 1. **Implementar vistas para elementos dinámicos**
    - Actualmente van a Dashboard
    - Crear vistas específicas según el elemento
-   
+
 2. **Agregar asignación de chatbots a grupos**
    - Tabla `cr321_chatbotgrupo` (N:N)
    - Campo JSON en `cr321_config` con grupos asignados
-   
+
 3. **Mejorar filtrado de menú por grupo**
    - Solo mostrar elementos de chatbots asignados al grupo del usuario
    - Combinar elementos de múltiples chatbots
@@ -273,9 +273,9 @@ cd c:/VS/BIN
 
 ### Ver chatbots activos
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5000/api/chatbots" -Method GET | 
-    Select-Object -ExpandProperty chatbots | 
-    Where-Object { $_.activo } | 
+Invoke-RestMethod -Uri "http://localhost:5000/api/chatbots" -Method GET |
+    Select-Object -ExpandProperty chatbots |
+    Where-Object { $_.activo } |
     Format-Table nombre, elemento1, elemento2, elemento3
 ```
 

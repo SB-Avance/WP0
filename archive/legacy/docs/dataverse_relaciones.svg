@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" font-family="Consolas, monospace" font-size="11">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#333"/>
+    </marker>
+    <style>
+      .tabla { fill: #f8f8f8; stroke: #333; stroke-width: 1; }
+      .tabla-grupos { fill: #e8f4e8; }
+      .tabla-chatbots { fill: #e8e8f4; }
+      .tabla-tickets { fill: #f4e8e8; }
+      .tabla-estados { fill: #f4f4e8; }
+      .tabla-usuarios { fill: #e8f4f4; }
+      .tabla-usuariogrupos { fill: #f4e8f4; }
+      .titulo { font-weight: bold; font-size: 12px; }
+    </style>
+  </defs>
+  <rect width="720" height="520" fill="#fafafa"/>
+  <!-- Título -->
+  <text x="360" y="24" text-anchor="middle" font-size="14" font-weight="bold">Tablas Dataverse (cr321_*) y relaciones</text>
+
+  <!-- cr321_grupos -->
+  <g transform="translate(40, 50)">
+    <rect class="tabla tabla-grupos" width="140" height="72" rx="4"/>
+    <text x="70" y="22" text-anchor="middle" class="titulo">cr321_grupos</text>
+    <text x="10" y="38">cr321_grupoid (PK)</text>
+    <text x="10" y="52">cr321_nombre, tipo</text>
+  </g>
+
+  <!-- cr321_estados -->
+  <g transform="translate(520, 50)">
+    <rect class="tabla tabla-estados" width="140" height="58" rx="4"/>
+    <text x="70" y="22" text-anchor="middle" class="titulo">cr321_estados</text>
+    <text x="10" y="38">cr321_estadoid (PK)</text>
+  </g>
+
+  <!-- cr321_contactos -->
+  <g transform="translate(520, 130)">
+    <rect class="tabla tabla-estados" width="140" height="58" rx="4"/>
+    <text x="70" y="22" text-anchor="middle" class="titulo">cr321_contactos</text>
+    <text x="10" y="38">cr321_contactoid (PK)</text>
+  </g>
+
+  <!-- cr321_chatbots -->
+  <g transform="translate(220, 50)">
+    <rect class="tabla tabla-chatbots" width="160" height="72" rx="4"/>
+    <text x="80" y="22" text-anchor="middle" class="titulo">cr321_chatbots</text>
+    <text x="10" y="38">cr321_chatbotid, cr321_config</text>
+    <text x="10" y="52">cr321_grupoid → grupo</text>
+  </g>
+
+  <!-- cr321_tickets -->
+  <g transform="translate(220, 200)">
+    <rect class="tabla tabla-tickets" width="260" height="100" rx="4"/>
+    <text x="130" y="22" text-anchor="middle" class="titulo">cr321_tickets</text>
+    <text x="10" y="40">cr321_ticketid, cr321_idticket</text>
+    <text x="10" y="54">cr321_grupoId → grupo</text>
+    <text x="10" y="68">cr321_estadoId → estado</text>
+    <text x="10" y="82">cr321_contactoId → contacto</text>
+  </g>
+
+  <!-- cr321_cotizacions -->
+  <g transform="translate(40, 140)">
+    <rect class="tabla" width="140" height="48" rx="4"/>
+    <text x="70" y="22" text-anchor="middle" class="titulo">cr321_cotizacions</text>
+    <text x="10" y="38">Sin lookups</text>
+  </g>
+
+  <!-- cr321_usuarios -->
+  <g transform="translate(520, 280)">
+    <rect class="tabla tabla-usuarios" width="140" height="58" rx="4"/>
+    <text x="70" y="22" text-anchor="middle" class="titulo">cr321_usuarios</text>
+    <text x="10" y="38">cr321_usuariosid (PK)</text>
+  </g>
+
+  <!-- cr321_usuariogrupos -->
+  <g transform="translate(260, 340)">
+    <rect class="tabla tabla-usuariogrupos" width="180" height="72" rx="4"/>
+    <text x="90" y="22" text-anchor="middle" class="titulo">cr321_usuariogrupos</text>
+    <text x="10" y="40">cr321_usuarioid → usuario</text>
+    <text x="10" y="54">cr321_grupoid → grupo</text>
+  </g>
+
+  <!-- Flechas: chatbots -> grupos -->
+  <path d="M 210 86 L 185 86 L 185 86 L 110 86" stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+  <text x="148" y="82" font-size="9">cr321_grupoid</text>
+
+  <!-- Flechas: tickets -> grupos -->
+  <path d="M 280 200 L 280 160 L 110 160 L 110 122" stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+  <text x="185" y="158" font-size="9">cr321_grupoId</text>
+
+  <!-- Flechas: tickets -> estados -->
+  <path d="M 480 250 L 560 250 L 560 79" stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+  <text x="500" y="245" font-size="9">cr321_estadoId</text>
+
+  <!-- Flechas: tickets -> contactos -->
+  <path d="M 350 300 L 560 300 L 560 188" stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+  <text x="450" y="298" font-size="9">cr321_contactoId</text>
+
+  <!-- Flechas: usuariogrupos -> grupos -->
+  <path d="M 260 340 L 180 340 L 180 122" stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+  <text x="205" y="328" font-size="9">cr321_grupoid</text>
+
+  <!-- Flechas: usuariogrupos -> usuarios -->
+  <path d="M 440 376 L 520 376 L 520 309" stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+  <text x="468" y="372" font-size="9">cr321_usuarioid</text>
+
+  <!-- Leyenda -->
+  <rect x="40" y="450" width="640" height="58" fill="#fff" stroke="#ccc" rx="4"/>
+  <text x="360" y="468" text-anchor="middle" font-weight="bold">Relaciones (Lookup)</text>
+  <text x="60" y="488">chatbots → grupos | tickets → grupos, estados, contactos | usuariogrupos → usuarios, grupos</text>
+</svg>

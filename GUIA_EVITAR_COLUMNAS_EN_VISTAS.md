@@ -3,7 +3,7 @@
 ## ❌ EL PROBLEMA
 
 Cuando creas una columna en Dataverse, **automáticamente se agrega a:**
-- 🔴 Vista "Active [Nombre Tabla]"  
+- 🔴 Vista "Active [Nombre Tabla]"
 - 🔴 Formulario principal
 - 🔴 Búsqueda global
 

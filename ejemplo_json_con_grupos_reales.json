@@ -3,7 +3,7 @@
   "chatbot_id": "Chatbot1",
   "descripcion": "Chatbot principal de atención al cliente",
   "fecha_actualizacion": "2026-02-11T10:30:00Z",
-  
+
   "_INSTRUCCIONES": {
     "_nota": "Este es un ejemplo CON grupos reales",
     "_paso_1": "Ejecuta: python listar_grupos_dataverse.py",
@@ -11,38 +11,38 @@
     "_paso_3": "Reemplaza los GUIDs de ejemplo por los reales",
     "_paso_4": "Copia ESTE JSON COMPLETO en el campo cr321_config"
   },
-  
+
   "menus": [
     {
       "numero": "1",
       "nombre": "Solicitud Ticket",
       "descripcion": "Crear tickets de soporte técnico",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "1.1",
           "nombre": "Incidente Técnico",
           "descripcion": "Reportar problemas técnicos que impiden trabajar",
           "handler": "A001",
-          
+
           "_GRUPO_EXPLICACION": {
             "_campo": "grupo_id contiene el GUID de cr321_grupos",
             "_formato": "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}",
             "_ejemplo": "Si 'Soporte Técnico' tiene GUID abc123..., usar ese GUID"
           },
-          
+
           "grupo_id": "{a1b2c3d4-1234-5678-90ab-cdef12345678}",
-          
+
           "_VALIDACION": {
             "_este_guid_debe_existir_en": "cr321_grupos.cr321_grupoid",
             "_ejemplo_query": "SELECT cr321_grupoid FROM cr321_grupos WHERE cr321_nombre = 'Soporte Técnico'"
           },
-          
+
           "activo": true,
           "tags": ["soporte", "tecnico", "urgente"]
         },
-        
+
         {
           "numero": "1.2",
           "nombre": "Solicitud de Servicio",
@@ -52,7 +52,7 @@
           "activo": true,
           "tags": ["soporte", "servicio"]
         },
-        
+
         {
           "numero": "1.3",
           "nombre": "Cambio RFC",
@@ -65,13 +65,13 @@
         }
       ]
     },
-    
+
     {
       "numero": "2",
       "nombre": "Ventas",
       "descripcion": "Consultas y cotizaciones de ventas",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "2.1",
@@ -82,13 +82,13 @@
           "activo": true,
           "tags": ["ventas", "cotizacion"]
         },
-        
+
         {
           "numero": "2.2",
           "nombre": "Ver Catálogo",
           "descripcion": "Descargar catálogo de productos en PDF",
           "handler": "E001",
-          
+
           "_SIN_GRUPO": {
             "_explicacion": "Este submenu NO requiere asignar a un grupo",
             "_razon": "Solo envía un PDF automáticamente",
@@ -98,14 +98,14 @@
               "omitir el campo grupo_id completamente"
             ]
           },
-          
+
           "grupo_id": null,
-          
+
           "activo": true,
           "tags": ["ventas", "catalogo", "pdf"],
           "sin_asignacion": true
         },
-        
+
         {
           "numero": "2.3",
           "nombre": "Estado de Pedido",
@@ -117,13 +117,13 @@
         }
       ]
     },
-    
+
     {
       "numero": "3",
       "nombre": "Solicitar Atención",
       "descripcion": "Atención directa con un agente humano",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "3.1",
@@ -134,7 +134,7 @@
           "activo": true,
           "tags": ["atencion", "mesa_ayuda"]
         },
-        
+
         {
           "numero": "3.2",
           "nombre": "Urgencia",
@@ -149,7 +149,7 @@
       ]
     }
   ],
-  
+
   "configuracion_general": {
     "timeout_respuesta": 300,
     "max_reintentos": 3,
@@ -158,7 +158,7 @@
     "mensaje_error": "Lo siento, hubo un error procesando tu solicitud. Por favor intenta de nuevo o escribe 'menu' para ver las opciones.",
     "mensaje_timeout": "No recibí tu respuesta. ¿Sigues ahí? Escribe 'si' para continuar o 'menu' para volver al inicio."
   },
-  
+
   "_RESUMEN_GRUPOS": {
     "_total_submenus": 8,
     "_con_grupo": 7,
@@ -173,7 +173,7 @@
       "Supervisores o Urgencias (para 3.2)"
     ]
   },
-  
+
   "_VALIDACION_FINAL": {
     "_comando": "python validar_grupos_menu.py",
     "_debe_mostrar": "✅ Todos los grupos válidos (7 verificados)",

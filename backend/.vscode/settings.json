@@ -1,4 +1,0 @@
-{
-    "appService.defaultWebAppToDeploy": "/subscriptions/b6548249-c1c0-471f-a1af-76a3cb782952/resourceGroups/GR-whatsapp-flask-app/providers/Microsoft.Web/sites/whatsapp-flask-app",
-    "appService.deploySubpath": "."
-}

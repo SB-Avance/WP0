@@ -229,7 +229,7 @@ MENÚ:
    └─ 4.3 Ver Catálogo            → E001  ← MISMO QUE 2.2 (reutilizado)
 ```
 
-**Ventaja:** 
+**Ventaja:**
 - Opción 1.1 y 3.1 usan el MISMO handler (A001)
 - Si el nombre de 1.1 cambia de "Incidente Técnico" a "Reportar Falla"
 - El código A001 NO cambia, sigue funcionando
@@ -329,7 +329,7 @@ Categoría: "1. Gestión de Tickets"
 
 PARTE 1: cr321_handler1: "S001"  ⚠️ Funciona, pero "S" ya no significa nada
          (confunde: S sugería Solicitud, ahora es Gestión)
-         
+
 PARTE 2: cr321_handler1: "A001"  ✅ Funciona, "A" nunca significó nada específico
          (no genera confusión)
 
@@ -356,7 +356,7 @@ DESPUÉS (mueves Incidente Técnico a Atención):
 
 PARTE 1: Confuso - S001 sugiere Solicitud pero está en Atención
          Idealmente deberías cambiar S001 → A002
-         
+
 PARTE 2: No hay confusión - A001, B001 son neutrales
          No importa en qué categoría estén
 
@@ -524,7 +524,7 @@ Este archivo es el **"catálogo maeastro"** que dice:
     "version": "1.2.0",
     "notas": "Escala automáticamente si afecta >50 usuarios o servicio caído"
   },
-  
+
   "S002": {
     "codigo": "S002",
     "nombre": "Solicitud de Servicio",
@@ -540,7 +540,7 @@ Este archivo es el **"catálogo maeastro"** que dice:
     "version": "1.0.0",
     "notas": "Handler básico sin validaciones complejas"
   },
-  
+
   "S003": {
     "codigo": "S003",
     "nombre": "Cambio Programado (RFC)",
@@ -557,7 +557,7 @@ Este archivo es el **"catálogo maeastro"** que dice:
     "version": "2.0.1",
     "notas": "Valida que usuario tenga rol de aprobador antes de crear RFC"
   },
-  
+
   "V001": {
     "codigo": "V001",
     "nombre": "Solicitar Cotización",
@@ -574,7 +574,7 @@ Este archivo es el **"catálogo maeastro"** que dice:
     "version": "1.5.0",
     "notas": "Consulta precios en ERP, aplica descuentos según cliente"
   },
-  
+
   "V002": {
     "codigo": "V002",
     "nombre": "Ver Catálogo de Productos",
@@ -590,7 +590,7 @@ Este archivo es el **"catálogo maeastro"** que dice:
     "version": "1.0.0",
     "notas": "Handler automático, solo envía PDF y termina"
   },
-  
+
   "V003": {
     "codigo": "V003",
     "nombre": "Seguimiento de Pedido",
@@ -606,7 +606,7 @@ Este archivo es el **"catálogo maeastro"** que dice:
     "version": "1.3.0",
     "notas": "Pide número de pedido y consulta ERP en tiempo real"
   },
-  
+
   "A001": {
     "codigo": "A001",
     "nombre": "Asignación Directa",
@@ -621,7 +621,7 @@ Este archivo es el **"catálogo maeastro"** que dice:
     "version": "1.0.0",
     "notas": "Solo asigna y notifica al grupo, sin capturar datos"
   },
-  
+
   "A002": {
     "codigo": "A002",
     "nombre": "Atención Urgente",
@@ -639,7 +639,7 @@ Este archivo es el **"catálogo maeastro"** que dice:
     "version": "1.4.0",
     "notas": "Envía SMS inmediatamente al asignar, para urgencias reales"
   },
-  
+
   "X999": {
     "codigo": "X999",
     "nombre": "Handler por Defecto",
@@ -662,26 +662,26 @@ Este archivo es el **"catálogo maeastro"** que dice:
 ```javascript
 {
   "A001": {                           // ← Código único (4 caracteres)
-    
+
     "codigo": "A001",                 // ← Código del handler
     "nombre": "Incidente Técnico",    // ← Nombre descriptivo (documentación)
-    
+
     "archivo": "handler_A001.py",     // ← ARCHIVO PYTHON (nombre = código)
     "clase": "HandlerA001",           // ← CLASE DENTRO DEL ARCHIVO (= código)
-    
+
     "activo": true,                   // ← Si false, no se usa (deshabilitado)
-    
+
     "preguntas": 3,                   // ← Cuántas preguntas hace
-    
+
     "grupo_asignado": null,           // ← Grupo específico o null
     "usa_grupo_de_menu": true,        // ← Si usa grupo del menú (cr321_grupo1)
-    
+
     "descripcion": "...",             // ← Descripción larga (documentación)
-    
+
     "version": "1.2.0",               // ← Control de versiones
-    
+
     "tags": ["tickets", "..."],      // ← Tags para búsqueda/categorización
-    
+
     "notas": "..."                    // ← Notas para desarrolladores
   }
 }
@@ -813,14 +813,14 @@ cr321_grupoid:   "{GUID-ATENCION}"         ← Grupo sugerido (pero será ignora
     "usa_grupo_de_dataverse": true
     // → Usará {GUID-SOPORTE-TI} de cr321_grupoid
   },
-  
+
   "E001": {
     "archivo": "handler_E001.py",
     "grupo_override": null,
     "usa_grupo_de_dataverse": false
     // → No asignará a ningún grupo
   },
-  
+
   "H001": {
     "archivo": "handler_H001.py",
     "grupo_override": "{GUID-SUPERVISORES}",
@@ -876,7 +876,7 @@ class ConfigHandler:
 class SistemaMenuModular:
     """
     Sistema de menú modular con handlers configurables vía JSON.
-    
+
     FLUJO PRINCIPAL:
     1. Cargar config_handlers.json al iniciar
     2. Usuario envía mensaje
@@ -885,33 +885,33 @@ class SistemaMenuModular:
     5. Cargar dinámicamente el archivo Python
     6. Ejecutar el handler
     """
-    
+
     def __init__(self):
         """Inicializa el sistema"""
-        
+
         # 1. Cargar configuración de handlers desde JSON
         self.config_handlers = self._cargar_config_json()
         print(f"✓ Cargados {len(self.config_handlers)} handlers desde JSON")
-        
+
         # 2. Obtener token de Dataverse
         self.token = self._obtener_token()
         print(f"✓ Token de Dataverse obtenido")
-        
+
         # 3. Configurar headers para API
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
             "Prefer": "return=representation"
         }
-        
+
         # 4. Estado de usuarios (en memoria, podrías usar Redis)
         self.estados_usuarios = {}
-    
-    
+
+
     def _cargar_config_json(self) -> Dict[str, ConfigHandler]:
         """
         Carga el archivo config_handlers.json y lo convierte en objetos Python.
-        
+
         PASO A PASO:
         1. Encontrar ruta del archivo JSON (handlers/config_handlers.json)
         2. Leer el archivo JSON
@@ -919,35 +919,35 @@ class SistemaMenuModular:
         4. Convertir cada entrada a objeto ConfigHandler
         5. Retornar diccionario {codigo: ConfigHandler}
         """
-        
+
         # 1. Construir ruta al archivo JSON
         # Path(__file__) = ruta de este archivo .py
         # .parent = carpeta que contiene este archivo
         # / "handlers" / "config_handlers.json" = ruta completa
         ruta_json = Path(__file__).parent / "handlers" / "config_handlers.json"
-        
+
         print(f"→ Buscando JSON en: {ruta_json}")
-        
+
         # 2. Verificar que archivo existe
         if not ruta_json.exists():
             raise FileNotFoundError(
                 f"No se encontró config_handlers.json en {ruta_json}. "
                 "Por favor créalo primero."
             )
-        
+
         # 3. Leer archivo JSON
         with open(ruta_json, 'r', encoding='utf-8') as f:
             data = json.load(f)  # Convierte JSON a diccionario Python
-        
+
         # 4. Convertir cada entrada a objeto ConfigHandler
         config_handlers = {}
-        
+
         for codigo, config in data.items():
             # Verificar campos obligatorios
             if not all(k in config for k in ['archivo', 'clase', 'activo']):
                 print(f"⚠️ Handler {codigo} incompleto, saltando...")
                 continue
-            
+
             # Crear objeto ConfigHandler
             handler_config = ConfigHandler(
                 codigo=config.get('codigo', codigo),
@@ -958,25 +958,25 @@ class SistemaMenuModular:
                 descripcion=config.get('descripcion'),
                 preguntas=config.get('preguntas', 0)
             )
-            
+
             config_handlers[codigo] = handler_config
             print(f"  ✓ {codigo}: {handler_config.nombre}")
-        
+
         # 5. Retornar diccionario
         return config_handlers
-    
-    
+
+
     def obtener_handler_para_opcion(self, subopcion: str, chatbot_data: dict) -> str:
         """
         Determina qué código de handler usar según la subopción seleccionada.
-        
+
         EJEMPLO:
-        subopcion = "1.1" 
+        subopcion = "1.1"
         chatbot_data = {"cr321_handler1": "S001", "cr321_handler2": "S002", ...}
-        
+
         RETORNA: "S001"
         """
-        
+
         # Mapeo de subopción a campo en tabla
         mapeo = {
             "1.1": "cr321_handler1",
@@ -985,26 +985,26 @@ class SistemaMenuModular:
             "1.4": "cr321_handler4",
             "1.5": "cr321_handler5",
         }
-        
+
         # Si subopción no tiene handler configurado, usar default
         campo_handler = mapeo.get(subopcion)
         if not campo_handler:
             return "X999"  # Handler por defecto
-        
+
         # Obtener código del chatbot
         codigo = chatbot_data.get(campo_handler)
-        
+
         # Si no hay código o está vacío, usar default
         if not codigo or codigo.strip() == "":
             return "X999"
-        
+
         return codigo
-    
-    
+
+
     def cargar_handler_dinamico(self, codigo: str):
         """
         Carga dinámicamente un handler según su código.
-        
+
         PASO A PASO:
         1. Buscar código en config_handlers
         2. Verificar que esté activo
@@ -1013,62 +1013,62 @@ class SistemaMenuModular:
         5. Obtener la clase del módulo
         6. Instanciar la clase
         7. Retornar instancia
-        
+
         EJEMPLO:
         codigo = "S001"
-        
+
         → Busca en JSON: "archivo": "handler_incidente_tecnico.py"
         → Importa: handlers.handler_incidente_tecnico
         → Obtiene clase: HandlerIncidenteTecnico
         → Instancia y retorna
         """
-        
+
         print(f"\n→ Cargando handler: {codigo}")
-        
+
         # 1. Buscar en configuración
         if codigo not in self.config_handlers:
             print(f"⚠️ Código {codigo} no encontrado, usando default X999")
             codigo = "X999"
-        
+
         config = self.config_handlers[codigo]
-        
+
         # 2. Verificar que esté activo
         if not config.activo:
             print(f"⚠️ Handler {codigo} está desactivado, usando default X999")
             codigo = "X999"
             config = self.config_handlers["X999"]
-        
+
         # 3. Obtener nombre de archivo y clase
         nombre_archivo = config.archivo.replace('.py', '')  # Quitar .py
         nombre_clase = config.clase
-        
+
         print(f"  → Archivo: {nombre_archivo}")
         print(f"  → Clase: {nombre_clase}")
-        
+
         try:
             # 4. Importar módulo dinámicamente
             # Ejemplo: importlib.import_module("handlers.handler_incidente_tecnico")
             modulo = importlib.import_module(f"handlers.{nombre_archivo}")
-            
+
             # 5. Obtener la clase del módulo
             # Ejemplo: getattr(modulo, "HandlerIncidenteTecnico")
             clase_handler = getattr(modulo, nombre_clase)
-            
+
             # 6. Instanciar la clase
             instancia = clase_handler(
                 dataverse_url=DATAVERSE_URL,
                 headers=self.headers
             )
-            
+
             print(f"  ✓ Handler {codigo} cargado exitosamente")
-            
+
             # 7. Retornar instancia
             return instancia
-            
+
         except Exception as e:
             print(f"❌ Error al cargar handler {codigo}: {e}")
             print(f"  → Cargando handler por defecto X999")
-            
+
             # Fallback al handler default
             modulo = importlib.import_module("handlers.handler_default")
             clase_handler = getattr(modulo, "HandlerDefault")
@@ -1076,12 +1076,12 @@ class SistemaMenuModular:
                 dataverse_url=DATAVERSE_URL,
                 headers=self.headers
             )
-    
-    
+
+
     def procesar_mensaje(self, from_user: str, mensaje: str):
         """
         Procesa un mensaje de usuario.
-        
+
         FLUJO COMPLETO:
         1. Usuario envía "1" → Mostrar submenú 1
         2. Usuario envía "1" de nuevo → Selecciona subopción 1.1
@@ -1091,35 +1091,35 @@ class SistemaMenuModular:
         6. Sistema carga ese archivo
         7. Ejecuta el handler
         """
-        
+
         print(f"\n{'='*60}")
         print(f"MENSAJE DE: {from_user}")
         print(f"CONTENIDO: {mensaje}")
         print(f"{'='*60}")
-        
+
         # Aquí va la lógica del menú (similar a sistema_menu_con_tickets.py)
         # Por simplicidad, asumamos que usuario ya seleccionó subopción 1.1
-        
+
         # EJEMPLO: Usuario seleccionó opción 1.1 (Incidente Técnico)
         subopcion = "1.1"
-        
+
         # 1. Consultar Dataverse para obtener configuración del chatbot
         chatbot_data = self._obtener_chatbot_principal()
-        
+
         # 2. Determinar qué handler usar
         codigo_handler = self.obtener_handler_para_opcion(subopcion, chatbot_data)
         print(f"→ Handler a usar: {codigo_handler}")
-        
+
         # 3. Cargar handler dinámicamente
         handler = self.cargar_handler_dinamico(codigo_handler)
-        
+
         # 4. Obtener configuración del handler desde JSON
         config = self.config_handlers[codigo_handler]
         print(f"→ Configuración:")
         print(f"  - Nombre: {config.nombre}")
         print(f"  - Preguntas: {config.preguntas}")
         print(f"  - Descripción: {config.descripcion}")
-        
+
         # 5. Ejecutar handler
         print(f"\n→ Ejecutando handler...")
         resultado = handler.ejecutar(
@@ -1127,41 +1127,41 @@ class SistemaMenuModular:
             mensaje=mensaje,
             grupo_id=chatbot_data.get('cr321_grupo1')
         )
-        
+
         print(f"✓ Handler ejecutado exitosamente")
         return resultado
-    
-    
+
+
     def _obtener_chatbot_principal(self) -> dict:
         """Obtiene configuración del chatbot desde Dataverse"""
-        
+
         response = requests.get(
             f"{DATAVERSE_URL}/cr321_chatbots?$filter=cr321_orden eq 0",
             headers=self.headers
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             if data['value']:
                 return data['value'][0]
-        
+
         raise Exception("No se pudo obtener configuración del chatbot")
-    
-    
+
+
     def _obtener_token(self) -> str:
         """Obtiene token OAuth de Microsoft"""
-        
+
         token_url = f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
-        
+
         data = {
             "client_id": CLIENT_ID,
             "client_secret": CLIENT_SECRET,
             "scope": f"{DATAVERSE_URL}/.default",
             "grant_type": "client_credentials"
         }
-        
+
         response = requests.post(token_url, data=data)
-        
+
         if response.status_code == 200:
             return response.json()["access_token"]
         else:
@@ -1176,16 +1176,16 @@ if __name__ == "__main__":
     print("="*60)
     print("SISTEMA DE MENÚ MODULAR CON HANDLERS")
     print("="*60)
-    
+
     # 1. Inicializar sistema
     sistema = SistemaMenuModular()
-    
+
     # 2. Simular mensaje de usuario
     resultado = sistema.procesar_mensaje(
         from_user="573001234567@s.whatsapp.net",
         mensaje="Mi sistema no funciona"
     )
-    
+
     print("\n" + "="*60)
     print("PROCESO COMPLETADO")
     print("="*60)
@@ -1207,34 +1207,34 @@ import requests
 class BaseHandler(ABC):
     """
     Clase base para todos los handlers.
-    
+
     Todos los handlers deben heredar de esta clase e implementar:
     - get_preguntas(): Retorna lista de preguntas a hacer
     - ejecutar_accion_final(): Ejecuta la acción final tras capturar respuestas
     """
-    
+
     def __init__(self, dataverse_url: str, headers: dict):
         """
         Inicializa el handler.
-        
+
         Args:
             dataverse_url: URL de Dataverse (https://org.crm.dynamics.com/api/data/v9.2)
             headers: Headers con token de autenticación
         """
         self.dataverse_url = dataverse_url
         self.headers = headers
-    
-    
+
+
     @abstractmethod
     def get_preguntas(self) -> List[str]:
         """
         Retorna lista de preguntas que el handler necesita hacer al usuario.
-        
+
         DEBE SER IMPLEMENTADO por cada handler específico.
-        
+
         Returns:
             List[str]: Lista de preguntas
-            
+
         Ejemplo:
             return [
                 "¿Cuál es el sistema afectado?",
@@ -1243,8 +1243,8 @@ class BaseHandler(ABC):
             ]
         """
         pass
-    
-    
+
+
     @abstractmethod
     def ejecutar_accion_final(
         self,
@@ -1254,23 +1254,23 @@ class BaseHandler(ABC):
     ) -> str:
         """
         Ejecuta la acción final después de capturar todas las respuestas.
-        
+
         DEBE SER IMPLEMENTADO por cada handler específico.
-        
+
         Args:
             from_user: Teléfono del usuario
             respuestas: Diccionario con las respuestas {pregunta: respuesta}
             grupo_id: ID del grupo al que asignar (opcional)
-        
+
         Returns:
             str: Mensaje final para enviar al usuario
-            
+
         Ejemplo:
             return "✓ Ticket #12345 creado. Atención en 15 minutos."
         """
         pass
-    
-    
+
+
     def ejecutar(
         self,
         from_user: str,
@@ -1279,10 +1279,10 @@ class BaseHandler(ABC):
     ) -> str:
         """
         Método principal que orquesta el flujo del handler.
-        
+
         Este método YA ESTÁ IMPLEMENTADO en la clase base.
         Los handlers específicos NO necesitan sobreescribirlo.
-        
+
         FLUJO:
         1. Obtener lista de preguntas
         2. Hacer cada pregunta al usuario
@@ -1290,20 +1290,20 @@ class BaseHandler(ABC):
         4. Ejecutar acción final
         5. Retornar mensaje final
         """
-        
+
         print(f"\n{'─'*60}")
         print(f"HANDLER EJECUTANDO")
         print(f"{'─'*60}")
-        
+
         # 1. Obtener preguntas
         preguntas = self.get_preguntas()
         print(f"→ Preguntas a hacer: {len(preguntas)}")
-        
+
         # 2. Si no hay preguntas, ejecutar directamente
         if len(preguntas) == 0:
             print("→ No hay preguntas, ejecutando acción directamente")
             return self.ejecutar_accion_final(from_user, {}, grupo_id)
-        
+
         # 3. Hacer preguntas y capturar respuestas
         # (Aquí iría la lógica completa de estado y captura)
         # Por ahora, simulamos respuestas
@@ -1313,14 +1313,14 @@ class BaseHandler(ABC):
             respuesta = f"Respuesta simulada {i}"
             respuestas[pregunta] = respuesta
             print(f"     → Usuario: {respuesta}")
-        
+
         # 4. Ejecutar acción final
         print(f"\n→ Ejecutando acción final...")
         mensaje_final = self.ejecutar_accion_final(from_user, respuestas, grupo_id)
-        
+
         return mensaje_final
-    
-    
+
+
     def crear_ticket(
         self,
         titulo: str,
@@ -1330,10 +1330,10 @@ class BaseHandler(ABC):
     ) -> dict:
         """
         Método auxiliar para crear tickets en Dataverse.
-        
+
         Disponible para todos los handlers que lo necesiten.
         """
-        
+
         ticket_data = {
             "cr321_titulo": titulo,
             "cr321_descripcion": descripcion,
@@ -1341,13 +1341,13 @@ class BaseHandler(ABC):
             "cr321_grupo@odata.bind": f"/cr321_grups({grupo_id})",
             "cr321_estado": "Nuevo"
         }
-        
+
         response = requests.post(
             f"{self.dataverse_url}/cr321_tickets",
             headers=self.headers,
             json=ticket_data
         )
-        
+
         if response.status_code == 201:
             return response.json()
         else:
@@ -1369,18 +1369,18 @@ from typing import List, Dict, Optional
 class HandlerIncidenteTecnico(BaseHandler):
     """
     Handler para incidentes técnicos con escalamiento automático.
-    
+
     Código: S001
     Preguntas: 3
     - Sistema afectado
     - Cantidad de usuarios afectados
     - Si está caído completamente
-    
+
     Lógica especial:
     - Si >50 usuarios afectados → Prioridad URGENTE
     - Si servicio caído → Severidad CRÍTICA + Notificar gerencia
     """
-    
+
     def get_preguntas(self) -> List[str]:
         """Define las 3 preguntas para incidentes técnicos"""
         return [
@@ -1388,8 +1388,8 @@ class HandlerIncidenteTecnico(BaseHandler):
             "¿Aproximadamente cuántos usuarios están afectados?",
             "¿El servicio está completamente caído? (Sí/No)"
         ]
-    
-    
+
+
     def ejecutar_accion_final(
         self,
         from_user: str,
@@ -1398,7 +1398,7 @@ class HandlerIncidenteTecnico(BaseHandler):
     ) -> str:
         """
         Crea el ticket con validaciones y escalamiento automático.
-        
+
         LÓGICA:
         1. Analizar respuestas
         2. Determinar prioridad y severidad
@@ -1407,14 +1407,14 @@ class HandlerIncidenteTecnico(BaseHandler):
         5. Asignar a grupo
         6. Retornar mensaje
         """
-        
+
         print(f"\n→ Analizando respuestas de incidente técnico...")
-        
+
         # 1. Obtener respuestas
         sistema = respuestas.get("¿Cuál es el sistema o aplicación afectada?", "No especificado")
         usuarios_afectados = respuestas.get("¿Aproximadamente cuántos usuarios están afectados?", "0")
         servicio_caido = respuestas.get("¿El servicio está completamente caído? (Sí/No)", "No")
-        
+
         # 2. Determinar prioridad
         try:
             num_usuarios = int(usuarios_afectados)
@@ -1425,12 +1425,12 @@ class HandlerIncidenteTecnico(BaseHandler):
                 prioridad = "Media"
         except:
             prioridad = "Media"
-        
+
         # 3. Determinar severidad
         severidad = "CRÍTICA" if servicio_caido.lower() in ['sí', 'si', 'yes'] else "Media"
         if severidad == "CRÍTICA":
             print(f"  🚨 Servicio caído → Severidad: CRÍTICA")
-        
+
         # 4. Crear ticket
         descripcion = f"""
 INCIDENTE TÉCNICO
@@ -1441,22 +1441,22 @@ Servicio caído: {servicio_caido}
 Prioridad: {prioridad}
 Severidad: {severidad}
         """.strip()
-        
+
         ticket = self.crear_ticket(
             titulo=f"Incidente: {sistema}",
             descripcion=descripcion,
             prioridad=prioridad,
             grupo_id=grupo_id
         )
-        
+
         ticket_id = ticket.get('cr321_ticketid', 'XXXXX')
         print(f"  ✓ Ticket #{ticket_id} creado")
-        
+
         # 5. Escalamiento y notificaciones
         if severidad == "CRÍTICA" or prioridad == "URGENTE":
             self._notificar_gerencia(ticket_id, sistema, severidad)
             self._enviar_sms_equipo_guardia(ticket_id)
-        
+
         # 6. Mensaje final
         mensaje = f"""
 🚨 Incidente #{ticket_id} registrado
@@ -1467,19 +1467,19 @@ Severidad: {severidad}
 
 Grupo asignado: Soporte Técnico
         """.strip()
-        
+
         if severidad == "CRÍTICA":
             mensaje += "\n\n⚠️ Se notificó a gerencia de TI y equipo de guardia."
-        
+
         return mensaje
-    
-    
+
+
     def _notificar_gerencia(self, ticket_id: str, sistema: str, severidad: str):
         """Notifica a gerencia de TI sobre incidente crítico"""
         print(f"  → Notificando a gerencia sobre ticket #{ticket_id}")
         # Aquí iría integración con email, Teams, etc.
-    
-    
+
+
     def _enviar_sms_equipo_guardia(self, ticket_id: str):
         """Envía SMS a equipo de guardia"""
         print(f"  → Enviando SMS a equipo de guardia sobre ticket #{ticket_id}")

@@ -3,14 +3,14 @@
   "chatbot_id": "Chatbot1",
   "descripcion": "Chatbot principal de atención al cliente",
   "fecha_actualizacion": "2026-02-11T10:30:00Z",
-  
+
   "menus": [
     {
       "numero": "1",
       "nombre": "Solicitud Ticket",
       "descripcion": "Crear tickets de soporte técnico",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "1.1",
@@ -43,13 +43,13 @@
         }
       ]
     },
-    
+
     {
       "numero": "2",
       "nombre": "Ventas",
       "descripcion": "Consultas y cotizaciones de ventas",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "2.1",
@@ -72,13 +72,13 @@
         }
       ]
     },
-    
+
     {
       "numero": "3",
       "nombre": "Solicitar Atención",
       "descripcion": "Atención directa con un agente",
       "activo": true,
-      
+
       "submenus": [
         {
           "numero": "3.1",
@@ -103,7 +103,7 @@
       ]
     }
   ],
-  
+
   "configuracion_general": {
     "timeout_respuesta": 300,
     "max_reintentos": 3,

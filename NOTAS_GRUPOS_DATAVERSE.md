@@ -81,17 +81,17 @@ def _validar_grupos_menu(self):
     """
     Valida que todos los grupo_id del menú existan en cr321_grupos
     """
-    
+
     # 1. Obtener grupos válidos de Dataverse
     response = requests.get(f"{DATAVERSE_URL}/cr321_grupos")
-    grupos_validos = {g['cr321_grupoid']: g['cr321_nombre'] 
+    grupos_validos = {g['cr321_grupoid']: g['cr321_nombre']
                       for g in response.json()["value"]}
-    
+
     # 2. Validar cada grupo_id del menú
     for menu in self.config_menu.menus:
         for submenu in menu.get('submenus', []):
             grupo_id = submenu.get('grupo_id')
-            
+
             if grupo_id and grupo_id not in grupos_validos:
                 print(f"⚠️ GUID inválido: {grupo_id}")
 ```

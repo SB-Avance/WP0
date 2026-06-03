@@ -1,0 +1,107 @@
+// Diagrama de tablas Dataverse (cr321_*) y sus relaciones
+// Generar: dot -Tsvg dataverse_relaciones_graphviz.dot -o dataverse_relaciones.svg
+//          dot -Tpng dataverse_relaciones_graphviz.dot -o dataverse_relaciones.png
+
+digraph DataverseTablas {
+    rankdir=TB;
+    node [shape=plaintext];
+    splines=ortho;
+
+    // Estilo de cajas tipo tabla
+    node [fontname="Consolas, monospace", fontsize=10];
+
+    subgraph cluster_principal {
+        label="Tablas principales";
+        fontsize=12;
+
+        grupos [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#e8f4e8">
+                <TR><TD COLSPAN="2"><B>cr321_grupos</B></TD></TR>
+                <TR><TD COLSPAN="2">Grupos</TD></TR>
+                <TR><TD>cr321_grupoid</TD><TD>PK (GUID)</TD></TR>
+                <TR><TD>cr321_nombre</TD><TD></TD></TR>
+                <TR><TD>cr321_tipo</TD><TD></TD></TR>
+            </TABLE>
+        >];
+
+        chatbots [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#e8e8f4">
+                <TR><TD COLSPAN="2"><B>cr321_chatbots</B></TD></TR>
+                <TR><TD COLSPAN="2">Menú / Chatbots</TD></TR>
+                <TR><TD>cr321_chatbotid</TD><TD>PK</TD></TR>
+                <TR><TD>cr321_name, cr321_config</TD><TD></TD></TR>
+                <TR><TD>cr321_grupoid</TD><TD>→ grupo</TD></TR>
+            </TABLE>
+        >];
+
+        tickets [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#f4e8e8">
+                <TR><TD COLSPAN="2"><B>cr321_tickets</B></TD></TR>
+                <TR><TD COLSPAN="2">Tickets</TD></TR>
+                <TR><TD>cr321_ticketid</TD><TD>PK</TD></TR>
+                <TR><TD>cr321_idticket, cr321_fromnombre</TD><TD></TD></TR>
+                <TR><TD>cr321_grupoId</TD><TD>→ grupo</TD></TR>
+                <TR><TD>cr321_estadoId</TD><TD>→ estado</TD></TR>
+                <TR><TD>cr321_contactoId</TD><TD>→ contacto</TD></TR>
+            </TABLE>
+        >];
+
+        estados [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#f4f4e8">
+                <TR><TD COLSPAN="2"><B>cr321_estados</B></TD></TR>
+                <TR><TD COLSPAN="2">Estados</TD></TR>
+                <TR><TD>cr321_estadoid</TD><TD>PK</TD></TR>
+                <TR><TD>cr321_nombre</TD><TD></TD></TR>
+            </TABLE>
+        >];
+
+        contactos [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#f4f4e8">
+                <TR><TD COLSPAN="2"><B>cr321_contactos</B></TD></TR>
+                <TR><TD COLSPAN="2">Contactos WhatsApp</TD></TR>
+                <TR><TD>cr321_contactoid</TD><TD>PK</TD></TR>
+                <TR><TD>cr321_telefono, cr321_fromnombre</TD><TD></TD></TR>
+            </TABLE>
+        >];
+
+        cotizaciones [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#f0f0f0">
+                <TR><TD COLSPAN="2"><B>cr321_cotizacions</B></TD></TR>
+                <TR><TD COLSPAN="2">Cotizaciones</TD></TR>
+                <TR><TD>cr321_nombre, cr321_cliente</TD><TD></TD></TR>
+            </TABLE>
+        >];
+    }
+
+    subgraph cluster_usuarios {
+        label="Usuarios y asignación";
+        fontsize=12;
+
+        usuarios [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#e8f4f4">
+                <TR><TD COLSPAN="2"><B>cr321_usuarios</B></TD></TR>
+                <TR><TD COLSPAN="2">Usuarios</TD></TR>
+                <TR><TD>cr321_usuariosid</TD><TD>PK</TD></TR>
+                <TR><TD>cr321_nombre, cr321_correo</TD><TD></TD></TR>
+            </TABLE>
+        >];
+
+        usuariogrupos [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#f4e8f4">
+                <TR><TD COLSPAN="2"><B>cr321_usuariogrupos</B></TD></TR>
+                <TR><TD COLSPAN="2">Usuario–Grupo (N:N)</TD></TR>
+                <TR><TD>cr321_usuariogruposid</TD><TD>PK</TD></TR>
+                <TR><TD>cr321_usuarioid</TD><TD>→ usuario</TD></TR>
+                <TR><TD>cr321_grupoid</TD><TD>→ grupo</TD></TR>
+            </TABLE>
+        >];
+    }
+
+    // Relaciones (Lookups)
+    chatbots -> grupos [label="cr321_grupoid", fontsize=9];
+    tickets -> grupos [label="cr321_grupoId", fontsize=9];
+    tickets -> estados [label="cr321_estadoId", fontsize=9];
+    tickets -> contactos [label="cr321_contactoId", fontsize=9];
+    usuariogrupos -> grupos [label="cr321_grupoid", fontsize=9];
+    usuariogrupos -> usuarios [label="cr321_usuarioid", fontsize=9];
+}

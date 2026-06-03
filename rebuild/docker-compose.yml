@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - DATAVERSE_URL=${DATAVERSE_URL}
+      - TENANT_ID=${TENANT_ID}
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
+      - PHONE_NUMBER_ID=${PHONE_NUMBER_ID}
+      - ACCESS_TOKEN=${ACCESS_TOKEN}
+    volumes:
+      - ./src:/app/src

@@ -13,10 +13,13 @@ Campos nuevos a agregar:
 - cr321_grupo4: Grupo asignado al elemento4
 - cr321_grupo5: Grupo asignado al elemento5
 """
-import requests
+
 import sys
-sys.path.append('backend')
-from goot import DATAVERSE_URL, CLIENT_ID, CLIENT_SECRET, TENANT_ID
+
+import requests
+
+sys.path.append("backend")
+from goot import CLIENT_ID, CLIENT_SECRET, DATAVERSE_URL, TENANT_ID
 
 
 def get_token():
@@ -26,7 +29,7 @@ def get_token():
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
         "scope": f"{DATAVERSE_URL}/.default",
-        "grant_type": "client_credentials"
+        "grant_type": "client_credentials",
     }
     response = requests.post(url, data=data)
     if response.status_code == 200:
@@ -38,31 +41,38 @@ def poblar_datos_ejemplo(token):
     """
     Pobla la tabla cr321_chatbots con datos de ejemplo para el menú jerárquico
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("POBLANDO DATOS DE EJEMPLO")
-    print("="*70)
-    
+    print("=" * 70)
+
     # Primero, desactivar todos los chatbots existentes
     print("\n⏳ Desactivando chatbots existentes...")
     url_get = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots?$select=cr321_chatbotid"
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/json",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
-    
+
     try:
         response = requests.get(url_get, headers=headers, timeout=10)
         if response.status_code == 200:
             chatbots_existentes = response.json().get("value", [])
             for cb in chatbots_existentes:
                 chatbot_id = cb.get("cr321_chatbotid")
-                url_update = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots({chatbot_id})"
-                requests.patch(url_update, json={"cr321_active": False}, headers=headers, timeout=10)
+                url_update = (
+                    f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots({chatbot_id})"
+                )
+                requests.patch(
+                    url_update,
+                    json={"cr321_active": False},
+                    headers=headers,
+                    timeout=10,
+                )
             print(f"✅ {len(chatbots_existentes)} chatbots desactivados")
     except Exception as e:
         print(f"⚠️  Error desactivando chatbots: {e}")
-    
+
     # Datos de ejemplo para el menú jerárquico
     chatbots_ejemplo = [
         {
@@ -76,7 +86,7 @@ def poblar_datos_ejemplo(token):
             "cr321_grupo1": "Soporte Técnico",
             "cr321_grupo2": "Garantías",
             "cr321_grupo3": "Consultas",
-            "cr321_config": '{"menu":"jerarquico","nivel":"principal"}'
+            "cr321_config": '{"menu":"jerarquico","nivel":"principal"}',
         },
         {
             "cr321_name": "Ventas",
@@ -89,7 +99,7 @@ def poblar_datos_ejemplo(token):
             "cr321_grupo1": "Ventas - Cotización",
             "cr321_grupo2": "Ventas - Catálogo",
             "cr321_grupo3": "Ventas - Seguimiento",
-            "cr321_config": '{"menu":"jerarquico","nivel":"principal"}'
+            "cr321_config": '{"menu":"jerarquico","nivel":"principal"}',
         },
         {
             "cr321_name": "Solicitar Atención",
@@ -100,53 +110,54 @@ def poblar_datos_ejemplo(token):
             "cr321_elemento2": "Agendar Cita",
             "cr321_grupo1": "Atención Inmediata",
             "cr321_grupo2": "Agendamiento",
-            "cr321_config": '{"menu":"jerarquico","nivel":"principal"}'
-        }
+            "cr321_config": '{"menu":"jerarquico","nivel":"principal"}',
+        },
     ]
-    
+
     url_create = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots"
-    
+
     print("\n⏳ Creando chatbots de ejemplo...")
     creados = 0
-    
+
     for chatbot in chatbots_ejemplo:
         try:
-            response = requests.post(url_create, json=chatbot, headers=headers, timeout=10)
+            response = requests.post(
+                url_create, json=chatbot, headers=headers, timeout=10
+            )
             if response.status_code in [200, 201, 204]:
                 print(f"✅ Creado: {chatbot['cr321_name']}")
                 creados += 1
             else:
-                print(f"❌ Error creando '{chatbot['cr321_name']}': HTTP {response.status_code}")
+                print(
+                    f"❌ Error creando '{chatbot['cr321_name']}': HTTP {response.status_code}"
+                )
                 print(f"   Detalle: {response.text[:200]}")
         except Exception as e:
             print(f"❌ Excepción creando '{chatbot['cr321_name']}': {e}")
-    
+
     print(f"\n✅ {creados}/{len(chatbots_ejemplo)} chatbots creados exitosamente")
-    
+
     return creados > 0
 
 
 def verificar_estructura():
     """Verifica que los campos necesarios existen en la tabla"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("VERIFICANDO ESTRUCTURA")
-    print("="*70)
-    
+    print("=" * 70)
+
     token = get_token()
     if not token:
         print("❌ No se pudo obtener token")
         return False
-    
+
     # Intentar consultar con los nuevos campos
     url = f"{DATAVERSE_URL}/api/data/v9.2/cr321_chatbots"
     url += "?$select=cr321_orden,cr321_grupo1,cr321_grupo2,cr321_grupo3,cr321_grupo4,cr321_grupo5"
     url += "&$top=1"
-    
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json"
-    }
-    
+
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
@@ -169,17 +180,17 @@ def verificar_estructura():
 
 def main():
     """Función principal"""
-    print("="*70)
+    print("=" * 70)
     print("CONFIGURACIÓN DE DATAVERSE PARA MENÚ JERÁRQUICO")
-    print("="*70)
-    
+    print("=" * 70)
+
     print("\n📋 INFORMACIÓN:")
     print("   Este script configurará la tabla cr321_chatbots con:")
     print("   - 3 opciones principales del menú")
     print("   - Subopciones con grupos asignados")
     print("   - Campo cr321_orden para orden personalizado")
     print("   - Campos cr321_grupoX para asignación de grupos")
-    
+
     print("\n⚠️  IMPORTANTE:")
     print("   Si los campos cr321_orden y cr321_grupoX no existen,")
     print("   necesitas crearlos manualmente en Power Apps:")
@@ -193,13 +204,13 @@ def main():
     print("      - cr321_grupo3 (Text)")
     print("      - cr321_grupo4 (Text)")
     print("      - cr321_grupo5 (Text)")
-    
+
     continuar = input("\n¿Deseas continuar con la configuración? (s/n): ")
-    
-    if continuar.lower() != 's':
+
+    if continuar.lower() != "s":
         print("\n❌ Configuración cancelada")
         return
-    
+
     # Obtener token
     print("\n[1/3] Obteniendo token...")
     token = get_token()
@@ -207,28 +218,28 @@ def main():
         print("❌ Error obteniendo token")
         return
     print("✅ Token obtenido")
-    
+
     # Verificar estructura
     print("\n[2/3] Verificando estructura de la tabla...")
     estructura_ok = verificar_estructura()
-    
+
     if not estructura_ok:
         print("\n⚠️  La estructura puede no estar completa.")
         print("   El script intentará crear los datos de todas formas.")
         continuar = input("   ¿Continuar? (s/n): ")
-        if continuar.lower() != 's':
+        if continuar.lower() != "s":
             print("\n❌ Configuración cancelada")
             return
-    
+
     # Poblar datos
     print("\n[3/3] Poblando datos de ejemplo...")
     exito = poblar_datos_ejemplo(token)
-    
+
     # Resumen final
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("RESUMEN")
-    print("="*70)
-    
+    print("=" * 70)
+
     if exito:
         print("\n✅ CONFIGURACIÓN COMPLETADA EXITOSAMENTE")
         print("\nPróximos pasos:")
@@ -253,4 +264,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n\n❌ Error inesperado: {e}")
         import traceback
+
         traceback.print_exc()

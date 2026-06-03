@@ -213,41 +213,41 @@ H-ATC-001 = Handler - Atención - 001
 
 ```python
 class SistemaMenuModular:
-    
+
     def __init__(self):
         self.catalogo_handlers = self.cargar_catalogo_handlers()
-    
+
     def cargar_catalogo_handlers(self):
         """Carga catálogo desde tabla cr321_handlers"""
         response = requests.get(
             f"{DATAVERSE_URL}/cr321_handlers",
             headers=self.headers
         )
-        
+
         catalogo = {}
         for handler in response.json()['value']:
             codigo = handler['cr321_codigo']      # "HDL001"
             archivo = handler['cr321_archivo']    # "handler_incidente_tecnico.py"
             activo = handler['cr321_activo']      # true/false
-            
+
             if activo:
                 catalogo[codigo] = archivo
-        
+
         return catalogo
-    
+
     def procesar_mensaje(self, from_user, texto):
         # 1. Usuario selecciona "1.1"
-        
+
         # 2. Obtener configuración
         chatbot = self.obtener_chatbot_principal()
         codigo_handler = chatbot['cr321_handler1']  # "HDL001"
-        
+
         # 3. Buscar en catálogo
         nombre_archivo = self.catalogo_handlers.get(codigo_handler, "handler_default.py")
-        
+
         # 4. Cargar handler
         handler = self.cargar_handler_dinamico(nombre_archivo)
-        
+
         # 5. Ejecutar
         handler.ejecutar()
 ```
@@ -374,38 +374,38 @@ import json
 from pathlib import Path
 
 class SistemaMenuModular:
-    
+
     def __init__(self):
         self.config_handlers = self.cargar_config_json()
-    
+
     def cargar_config_json(self):
         """Carga configuración desde JSON"""
         config_path = Path(__file__).parent / "handlers" / "config_handlers.json"
-        
+
         with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
-    
+
     def procesar_mensaje(self, from_user, texto):
         # 1. Usuario selecciona "1.1"
-        
+
         # 2. Obtener configuración
         chatbot = self.obtener_chatbot_principal()
         codigo_handler = chatbot['cr321_handler1']  # "HDL001"
-        
+
         # 3. Buscar en config JSON
         if codigo_handler not in self.config_handlers:
             codigo_handler = "HDL999"  # Fallback a default
-        
+
         config = self.config_handlers[codigo_handler]
-        
+
         # 4. Verificar si está activo
         if not config.get('activo', False):
             return "Handler no disponible temporalmente"
-        
+
         # 5. Cargar handler
         nombre_archivo = config['archivo']
         handler = self.cargar_handler_dinamico(nombre_archivo)
-        
+
         # 6. Ejecutar
         handler.ejecutar()
 ```

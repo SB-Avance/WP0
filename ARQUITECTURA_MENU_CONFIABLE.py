@@ -11,7 +11,7 @@ Azure: ⏳ Pendiente de deployment
 
 Estructura del menú:
 1. Informacion
-   - Solicitar atención de agente  
+   - Solicitar atención de agente
    - Pagina Web
 
 2. Soporte
@@ -34,7 +34,7 @@ Estructura del menú:
    - Actualización automática cuando expira
    - Logs detallados [MENU_TEXT]
 
-2. NUMERACIÓN CONSECUTIVA GARANTIZADA  
+2. NUMERACIÓN CONSECUTIVA GARANTIZADA
    ✅ YA IMPLEMENTADO
    - Orden alfabético por cr321_name
    - Números del 1 al N automáticos
@@ -156,16 +156,16 @@ Una vez Azure se actualice (verificar con: python verificar_azure_simple.py)
 2. Deberías recibir exactamente:
 
    ¡Bienvenido! Por favor seleccione una opción:
-   
+
    1. Informacion
       - Solicitar atención de agente
       - Pagina Web
-   
+
    2. Soporte
       - Solicitud Ticket
       - Estado Ticket
       - Solicitar atención de agente
-   
+
    3. Ventas
       - Cotizacion
       - Catalogo

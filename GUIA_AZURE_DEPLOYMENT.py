@@ -9,7 +9,7 @@ SOLUCIÓN 1: ESPERAR (Recomendado)
 Azure tiene "Continuous Deployment" configurado desde GitHub.
 - Tiempo típico: 5-15 minutos
 - Verificación: Ejecuta cada 2-3 minutos:
-  
+
   python verificar_azure_simple.py
 
 SOLUCIÓN 2: REINICIO MANUAL EN AZURE PORTAL
@@ -22,7 +22,7 @@ SOLUCIÓN 2: REINICIO MANUAL EN AZURE PORTAL
 3. En el menú izquierdo:
    - Deployment Center → Ver logs de deployment
    - Verifica si el commit "566067d" está desplegado
-   
+
 4. Si NO está desplegado:
    - Opciones:
      a) Overview → Restart (botón arriba)
@@ -38,18 +38,18 @@ VERIFICACIÓN EN WHATSAPP REAL
 Después del deployment:
 1. Abre WhatsApp y envía "menu" al número de WhatsApp Business
 2. Deberías recibir:
-   
+
    ¡Bienvenido! Por favor seleccione una opción:
-   
+
    1. Informacion
       - Solicitar atención de agente
       - Pagina Web
-   
+
    2. Soporte
       - Solicitud Ticket
       - Estado Ticket
       - Solicitar atención de agente
-   
+
    3. Ventas
       - Cotizacion
       - Catalogo

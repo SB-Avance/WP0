@@ -65,16 +65,16 @@ cr321_grupoid: {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
 
 2. Sistema consulta Dataverse:
    SELECT * FROM cr321_chatbots WHERE cr321_elemento1 = 'Incidente Técnico'
-   
+
    Resultado:
    ├─ cr321_elemento1: "Incidente Técnico"
    ├─ cr321_config:    "A001"              ← Código handler
    └─ cr321_grupoid:   {GUID-SOPORTE}      ← Grupo destino
 
 3. Sistema abre: handlers/config_handlers.json
-   
+
    Busca código: "A001"
-   
+
    Encuentra:
    {
      "A001": {
@@ -89,11 +89,11 @@ cr321_grupoid: {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
 4. Sistema carga: handlers/handler_A001.py
 
 5. Determina grupo destino:
-   
+
    ┌─ config["grupo_override"] == null? ✅
    ├─ config["usa_grupo_de_dataverse"] == true? ✅
    └─ USAR: cr321_grupoid de Dataverse = {GUID-SOPORTE}
-   
+
    O si fuera override:
    ┌─ config["grupo_override"] == {GUID-SUPERVISORES}? ✅
    ├─ config["usa_grupo_de_dataverse"] == false? ✅
@@ -228,7 +228,7 @@ cr321_grupoid:   null
 def obtener_handler_para_opcion(subopcion: str) -> dict:
     """
     Consulta Dataverse para obtener configuración de la opción.
-    
+
     Returns:
         {
             'codigo_handler': 'A001',
@@ -236,11 +236,11 @@ def obtener_handler_para_opcion(subopcion: str) -> dict:
             'nombre': 'Incidente Técnico'
         }
     """
-    
+
     # Consulta según subopción (1.1, 1.2, etc.)
     # Asumiendo que subopción 1.1 corresponde a cr321_orden = 11
     orden = int(subopcion.replace('.', ''))
-    
+
     response = requests.get(
         f"{DATAVERSE_URL}/cr321_chatbots",
         headers=headers,
@@ -249,44 +249,44 @@ def obtener_handler_para_opcion(subopcion: str) -> dict:
             "$select": "cr321_elemento1,cr321_config,cr321_grupoid"
         }
     )
-    
+
     if response.status_code == 200:
         data = response.json()["value"][0]
-        
+
         return {
             'codigo_handler': data.get('cr321_config'),        # ← "A001"
             'grupo_id': data.get('_cr321_grupoid_value'),      # ← GUID
             'nombre': data.get('cr321_elemento1')              # ← "Incidente Técnico"
         }
-    
+
     return None
 
 
 def determinar_grupo_final(codigo_handler: str, grupo_dataverse: str) -> str:
     """
     Determina qué grupo usar según configuración del handler.
-    
+
     Args:
         codigo_handler: Código del handler (ej: "A001")
         grupo_dataverse: GUID del grupo en Dataverse (cr321_grupoid)
-    
+
     Returns:
         GUID del grupo final a usar
     """
-    
+
     # 1. Obtener config del handler desde JSON
     config = config_handlers[codigo_handler]
-    
+
     # 2. Verificar si hay override
     if config.get('grupo_override'):
         # Tiene override → usar ese grupo (ignorar Dataverse)
         return config['grupo_override']
-    
+
     # 3. Verificar si usa grupo de Dataverse
     if config.get('usa_grupo_de_dataverse', True):
         # Usa grupo de Dataverse
         return grupo_dataverse
-    
+
     # 4. No usa grupo
     return None
 

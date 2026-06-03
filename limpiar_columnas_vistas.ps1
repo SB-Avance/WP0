@@ -20,7 +20,7 @@ $tabla = "cr321_usuarios"  # Cambiar según tu tabla
 # Columnas que quieres quitar de las vistas
 $columnasAQuitar = @(
     "cr321_1",
-    "cr321_3", 
+    "cr321_3",
     "cr321_4",
     "cr321_usuariogrupo1"
     # Agregar más columnas aquí
@@ -30,33 +30,33 @@ $columnasAQuitar = @(
 
 function Show-Instructions {
     Write-Host "PASOS MANUALES (mientras tanto):`n" -ForegroundColor Yellow
-    
+
     Write-Host "1. Ve a: " -NoNewline -ForegroundColor White
     Write-Host "https://make.powerapps.com" -ForegroundColor Cyan
-    
+
     Write-Host "`n2. Navega a:" -ForegroundColor White
     Write-Host "   Tablas → " -NoNewline -ForegroundColor Gray
     Write-Host "$tabla" -NoNewline -ForegroundColor Yellow
     Write-Host " → Pestaña 'Vistas'" -ForegroundColor Gray
-    
+
     Write-Host "`n3. Para CADA vista:" -ForegroundColor White
     Write-Host "   • Abrir editor de vista" -ForegroundColor Gray
     Write-Host "   • Buscar y quitar estas columnas:" -ForegroundColor Gray
-    
+
     foreach ($col in $columnasAQuitar) {
         Write-Host "     ✗ $col" -ForegroundColor Red
     }
-    
+
     Write-Host "   • Guardar y Publicar" -ForegroundColor Gray
-    
+
     Write-Host "`n4. Repetir para la pestaña 'Formularios'" -ForegroundColor White
-    
+
     Write-Host "`n═══════════════════════════════════════════`n" -ForegroundColor Cyan
 }
 
 function Hide-ColumnFromSearch {
     param($columnName)
-    
+
     Write-Host "`n⚠️ Para ocultar '$columnName' de búsquedas:" -ForegroundColor Yellow
     Write-Host "   1. Tablas → $tabla → Columnas" -ForegroundColor Gray
     Write-Host "   2. Buscar: $columnName" -ForegroundColor Gray

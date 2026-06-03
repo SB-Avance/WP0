@@ -1,13 +1,15 @@
 """
 Resumen ejecutivo de refactorización del frontend
 """
+
 import requests
 
-print("="*80)
+print("=" * 80)
 print("RESUMEN EJECUTIVO - REFACTORIZACION FRONTEND COMPLETA")
-print("="*80)
+print("=" * 80)
 
-print("""
+print(
+    """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                      REFACTORIZACION DEL FRONTEND                             ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -20,17 +22,17 @@ print("""
        ✅ Diccionario group_mapping hardcoded
        ✅ Mapeos 0001-0004 innecesarios
        ✅ Comentarios de mapeo obsoletos
-       
+
     2. CACHE DE GRUPOS IMPLEMENTADO
        ✅ user_groups_cache = {"value": None}
        ✅ Una HTTP request por sesión (antes: N requests)
        ✅ Cache se limpia en logout
-       
+
     3. LOGS OPTIMIZADOS
        ✅ De 9 líneas verbose → 3-4 líneas concisas
        ✅ Mensajes más informativos
        ✅ Mejor debugging
-       
+
     4. CÓDIGO REDUCIDO
        ✅ 47 líneas → 31 líneas (34% menos código)
        ✅ Más legible y mantenible
@@ -42,19 +44,19 @@ print("""
 
     ANTES                           AHORA
     ═════════════════════════       ═════════════════════════
-    
+
     Código legacy:                  Código legacy:
     └─ group_mapping = {...}        └─ [ELIMINADO]
-    
+
     HTTP requests:                  HTTP requests:
     └─ Cada render                  └─ Una por sesión (cache)
-    
+
     Logs:                           Logs:
     └─ 9 líneas verbose             └─ 3-4 líneas concisas
-    
+
     Líneas código:                  Líneas código:
     └─ 47 líneas                    └─ 31 líneas (-34%)
-    
+
     Diccionarios:                   Diccionarios:
     └─ Hardcoded no usado           └─ [ELIMINADO]
 
@@ -64,7 +66,7 @@ print("""
 
     Usuario Normal (no admin)              Administrador
     ═════════════════════════              ══════════════
-    
+
     Login → Vista chats                    Login → Vista chats
        ↓                                      ↓
     Cache vacío?                           Sin filtrado
@@ -88,12 +90,12 @@ print("""
        - Cache reduce HTTP requests en ~90%
        - Código más eficiente (34% menos líneas)
        - Sin operaciones innecesarias
-    
+
     ✅ Mantenibilidad
        - Sin código legacy (group_mapping eliminado)
        - Logs más claros y útiles
        - Código más legible
-    
+
     ✅ Arquitectura
        - Integración perfecta con backend refactorizado
        - Usa lookups directamente desde Dataverse
@@ -121,7 +123,7 @@ print("""
     Tests exitosos:       15 ✅
     Tests fallidos:       0
     Éxito:                100%
-    
+
     Código eliminado:     16 líneas (legacy)
     Código reducido:      34% en sección filtrado
     HTTP requests:        90% reducción con cache
@@ -130,7 +132,8 @@ print("""
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ VERIFICACION DEL BACKEND                                                     │
 └─────────────────────────────────────────────────────────────────────────────┘
-""")
+"""
+)
 
 # Verificar que el backend esté activo
 print("    Verificando backend activo...")
@@ -141,44 +144,53 @@ try:
         data = response.json()
         total_conv = len(data.get("conversations", []))
         grupos_disp = data.get("groups", [])
-        
-        print(f"""
+
+        print(
+            f"""
     ✅ Backend: ACTIVO
        - URL: http://localhost:5000
        - Conversaciones: {total_conv}
        - Grupos disponibles: {len(grupos_disp)}
          {', '.join(grupos_disp[:5])}
-        """)
-        
+        """
+        )
+
         # Verificar API de grupos de usuario
         user_id = "e45580f3-59fa-f011-8406-002248df122f"  # Usuario 0006 (c)
-        response_grupos = requests.get(f"http://localhost:5000/api/usuario-grupos/usuario/{user_id}", timeout=3)
-        
+        response_grupos = requests.get(
+            f"http://localhost:5000/api/usuario-grupos/usuario/{user_id}", timeout=3
+        )
+
         if response_grupos.status_code == 200:
             grupos_data = response_grupos.json()
             grupos_usuario = grupos_data.get("grupos", [])
-            print(f"""
+            print(
+                f"""
     ✅ API usuario-grupos: FUNCIONAL
        - Usuario test: c (0006)
        - Grupos asignados: {[g.get('nombre') for g in grupos_usuario]}
        - Con lookups: {"id" in grupos_usuario[0] if grupos_usuario else False}
-            """)
+            """
+            )
         else:
-            print(f"\n    ⚠️  API usuario-grupos responde con status {response_grupos.status_code}")
-            
+            print(
+                f"\n    ⚠️  API usuario-grupos responde con status {response_grupos.status_code}"
+            )
+
     else:
         print(f"\n    ⚠️  Backend responde pero con status {response.status_code}")
 except Exception as e:
     print(f"\n    ⚠️  Backend no responde: {e}")
 
-print("""
+print(
+    """
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    
+
     ✅ REFACTORIZACION COMPLETA
-    
+
        Frontend integrado con backend refactorizado
        Sin código legacy • Cache implementado • Performance optimizada
-       
+
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -195,17 +207,17 @@ print("""
     1. Iniciar aplicación:
        cd c:/VS/BIN
        .\\iniciar.ps1
-    
+
     2. Login como usuario normal (c/c):
        - Verificar log: "[FILTRO] Cargando grupos del usuario c..."
        - Ver conversaciones filtradas (1 conversación)
        - Cambiar de vista y volver
        - Verificar log: "[FILTRO] Usando cache de grupos"
-    
+
     3. Logout y volver a login:
        - Verificar cache limpiado
        - Verificar log vuelve a decir "Cargando grupos..."
-    
+
     4. Login como administrador:
        - Verificar log: "[FILTRO] Administrador - mostrando todas"
        - Ver todas las conversaciones (7 conversaciones)
@@ -221,8 +233,9 @@ print("""
     ✅ Arquitectura Dataverse estándar
     ✅ Tests: 25/25 backend + 15/15 frontend = 40/40 (100%)
 
-""")
+"""
+)
 
-print("="*80)
+print("=" * 80)
 print("✅ SISTEMA COMPLETO REFACTORIZADO Y VERIFICADO")
-print("="*80)
+print("=" * 80)
