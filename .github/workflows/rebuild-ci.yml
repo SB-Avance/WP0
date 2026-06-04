@@ -23,5 +23,16 @@ jobs:
         run: |
           echo "No linters configured yet"
       - name: Run tests
+        env:
+          DATAVERSE_URL: "http://example"
+          TENANT_ID: "local"
+          CLIENT_ID: "local"
+          CLIENT_SECRET: "local"
+          PHONE_NUMBER_ID: "local"
+          ACCESS_TOKEN: "local"
+          VERIFY_TOKEN: "local"
         run: |
-          echo "No tests yet"
+          python -m pytest -q rebuild/tests
+      - name: Run mypy
+        run: |
+          python -m mypy --config-file=rebuild/mypy.ini
