@@ -5,6 +5,7 @@ import requests
 from msal import ConfidentialClientApplication  # type: ignore[import]
 
 from ..core.config import settings
+from . import mocks
 
 
 class DataverseClient:
@@ -15,7 +16,6 @@ class DataverseClient:
     def _acquire_token(self) -> Optional[str]:
         if self._token and time() < self._token_expiry - 60:
             return self._token
-
         authority = f"https://login.microsoftonline.com/{settings.tenant_id}"
         app = ConfidentialClientApplication(
             settings.client_id,
@@ -156,12 +156,23 @@ class DataverseClient:
 
 
 # Backwards-compatible module-level client for tests that patch `dataverse_client`
-dataverse_client: DataverseClient = DataverseClient()
+dataverse_client: DataverseClient | None = None
 
 
 def get_dataverse_client() -> DataverseClient:
-    # Prefer module-level `dataverse_client` (test compatibility); otherwise create one lazily
+    """Return a client instance. In LOCAL environment return the mock client."""
     global dataverse_client
+    if settings.environment and str(settings.environment).upper() == "LOCAL":
+        # return a module-level mock for testability
+        if not isinstance(dataverse_client, mocks.MockDataverseClient):
+            dataverse_client = mocks.MockDataverseClient()  # type: ignore[assignment]
+        return dataverse_client  # type: ignore[return-value]
+
+    # If we were previously using a mock but now running non-LOCAL, recreate real client
+    if isinstance(dataverse_client, mocks.MockDataverseClient):
+        dataverse_client = None
+
+    # Prefer module-level `dataverse_client` (test compatibility); otherwise create one lazily
     if dataverse_client is None:
         dataverse_client = DataverseClient()
     return dataverse_client

@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant User as Usuario
+    participant WhatsApp as WhatsApp (Meta)
+    participant Webhook as /api/webhook
+    participant Dataverse as Dataverse
+    participant App as FastAPI Service
+    participant WhatsAppSvc as WhatsAppClient
+    participant MockDataverse as MockDataverseClient
+
+    User->>WhatsApp: Mensaje entrante
+    WhatsApp->>Webhook: POST webhook (payload)
+    Webhook->>App: Validate & parse
+    App->>Dataverse: save_message (via DataverseClient)
+    alt ENVIRONMENT == LOCAL
+        App->>MockDataverse: save_message (in-memory)
+        MockDataverse-->>App: saved (id)
+    else ENVIRONMENT == PROD
+        App->>Dataverse: acquire_token (MSAL) and POST to Dataverse Web API
+        Dataverse-->>App: 201 / saved
+    end
+    App->>WhatsAppSvc: send auto-reply (optional)
+    WhatsAppSvc->>WhatsApp: POST messages (Graph API)
+    WhatsApp-->>App: 200 OK
+    Note right of App: Dashboard queries
+    App->>Dataverse: query_conversations / query_messages
+    Dataverse-->>App: conversations / messages
+    App-->>User Browser: dashboard rendering

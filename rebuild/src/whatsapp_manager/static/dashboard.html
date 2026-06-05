@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>WhatsApp Manager — Dashboard</title>
+    <style>
+      body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f7f7fb;color:#111;margin:0;padding:20px}
+      .container{max-width:1000px;margin:0 auto}
+      .flex{display:flex;gap:16px}
+      .panel{background:#fff;border:1px solid #e6e6ee;border-radius:8px;padding:12px;flex:1}
+      .list-item{padding:8px;border-bottom:1px solid #f0f0f5;cursor:pointer}
+      .list-item:hover{background:#fafafa}
+      pre{white-space:pre-wrap}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>WhatsApp Manager — Dashboard</h1>
+      <div class="flex">
+        <div class="panel" id="conversations">
+          <h2>Conversaciones</h2>
+          <div id="conv-list">Cargando...</div>
+        </div>
+        <div class="panel" id="messages">
+          <h2>Mensajes</h2>
+          <div id="msg-list">Selecciona una conversación</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      async function fetchConversations(){
+        const r = await fetch('/api/conversations?limit=100');
+        const j = await r.json();
+        const container = document.getElementById('conv-list');
+        if(!j.success){ container.innerText = 'Error: ' + (j.detail||JSON.stringify(j)); return }
+        container.innerHTML = '';
+        j.conversations.forEach(c=>{
+          const el = document.createElement('div');
+          el.className='list-item';
+          el.innerHTML = `<strong>${c.name||'Desconocido'}</strong><div>${c.phone}</div><small>${c.last_message||''}</small>`;
+          el.onclick = ()=>fetchMessages(c.phone);
+          container.appendChild(el);
+        });
+        if(j.conversations.length===0) container.innerText = 'No hay conversaciones.'
+      }
+
+      async function fetchMessages(phone){
+        const r = await fetch(`/api/messages/${encodeURIComponent(phone)}`);
+        const j = await r.json();
+        const container = document.getElementById('msg-list');
+        if(!j.success){ container.innerText = 'Error: ' + (j.detail||JSON.stringify(j)); return }
+        container.innerHTML = '';
+        if(j.messages.length===0){ container.innerText = 'No hay mensajes para este teléfono.'; return }
+        j.messages.forEach(m=>{
+          const el = document.createElement('div');
+          el.className='list-item';
+          el.innerHTML = `<div><strong>${m.direction}</strong> <small>${m.timestamp||''}</small></div><div>${m.body||''}</div>`;
+          container.appendChild(el);
+        });
+      }
+
+      // initial load
+      fetchConversations();
+    </script>
+  </body>
+</html>

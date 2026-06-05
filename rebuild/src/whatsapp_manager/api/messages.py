@@ -10,7 +10,8 @@ router = APIRouter(prefix="/api")
 @router.get("/messages/{phone_number}")
 def get_messages(phone_number: str, group: Optional[str] = Query(None)):
     try:
-        records = dataverse_svc.dataverse_client.query_messages(phone_number, group)
+        # Use get_dataverse_client() so we respect mocks or configured client
+        records = dataverse_svc.get_dataverse_client().query_messages(phone_number, group)
         messages = []
         for record in records:
             messages.append(
