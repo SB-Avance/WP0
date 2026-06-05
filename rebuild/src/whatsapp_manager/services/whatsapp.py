@@ -5,6 +5,7 @@ from ..core.config import settings
 
 class WhatsAppClient:
     def __init__(self):
+        # Defer reading settings until instance creation
         self.phone_id = settings.phone_number_id
         self.token = settings.access_token
 
@@ -25,4 +26,11 @@ class WhatsAppClient:
         return resp.json()
 
 
-whatsapp_client = WhatsAppClient()
+_whatsapp_client: WhatsAppClient | None = None
+
+
+def get_whatsapp_client() -> WhatsAppClient:
+    global _whatsapp_client
+    if _whatsapp_client is None:
+        _whatsapp_client = WhatsAppClient()
+    return _whatsapp_client

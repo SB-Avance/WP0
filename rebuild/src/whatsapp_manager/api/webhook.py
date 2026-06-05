@@ -41,7 +41,7 @@ async def webhook_handler(request: Request):
 
                 # Persist to Dataverse
                 try:
-                    dataverse_svc.dataverse_client.save_message(
+                    dataverse_svc.get_dataverse_client().save_message(
                         message_id,
                         fromphone,
                         timestamp,
@@ -60,7 +60,7 @@ async def webhook_handler(request: Request):
                     else:
                         reply = "Mensaje recibido. Escribe 'menu' para opciones."
 
-                    whatsapp_svc.whatsapp_client.send_text(fromphone, reply)
+                    whatsapp_svc.get_whatsapp_client().send_text(fromphone, reply)
                 except Exception as e:
                     print(f"[WEBHOOK_WA_ERROR] {e}")
 

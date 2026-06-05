@@ -155,4 +155,11 @@ class DataverseClient:
         return list(conversations.values()), list(groups)
 
 
-dataverse_client = DataverseClient()
+_dataverse_client: DataverseClient | None = None
+
+
+def get_dataverse_client() -> DataverseClient:
+    global _dataverse_client
+    if _dataverse_client is None:
+        _dataverse_client = DataverseClient()
+    return _dataverse_client
