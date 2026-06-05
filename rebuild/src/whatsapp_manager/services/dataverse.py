@@ -155,11 +155,13 @@ class DataverseClient:
         return list(conversations.values()), list(groups)
 
 
-_dataverse_client: DataverseClient | None = None
+# Backwards-compatible module-level client for tests that patch `dataverse_client`
+dataverse_client: DataverseClient = DataverseClient()
 
 
 def get_dataverse_client() -> DataverseClient:
-    global _dataverse_client
-    if _dataverse_client is None:
-        _dataverse_client = DataverseClient()
-    return _dataverse_client
+    # Prefer module-level `dataverse_client` (test compatibility); otherwise create one lazily
+    global dataverse_client
+    if dataverse_client is None:
+        dataverse_client = DataverseClient()
+    return dataverse_client

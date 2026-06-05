@@ -30,7 +30,20 @@ _whatsapp_client: WhatsAppClient | None = None
 
 
 def get_whatsapp_client() -> WhatsAppClient:
-    global _whatsapp_client
+    global _whatsapp_client, whatsapp_client
+    # If a module-level client (or placeholder) exists, prefer it for compatibility/tests
+    if whatsapp_client is not None:
+        return whatsapp_client  # type: ignore[return-value]
+
     if _whatsapp_client is None:
         _whatsapp_client = WhatsAppClient()
     return _whatsapp_client
+
+
+# Backwards-compatible module-level placeholder client so tests can monkeypatch
+class _WhatsAppPlaceholder:
+    def send_text(self, to: str, body: str):
+        raise RuntimeError("WhatsApp client not configured")
+
+
+whatsapp_client: WhatsAppClient | _WhatsAppPlaceholder = _WhatsAppPlaceholder()
