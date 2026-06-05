@@ -3,10 +3,11 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from fastapi.testclient import TestClient
-from whatsapp_manager.main import app
-from whatsapp_manager.services import dataverse as dataverse_svc
-from whatsapp_manager.services import whatsapp as whatsapp_svc
+from fastapi.testclient import TestClient  # noqa: E402
+
+from whatsapp_manager.main import app  # noqa: E402
+from whatsapp_manager.services import dataverse as dataverse_svc  # noqa: E402
+from whatsapp_manager.services import whatsapp as whatsapp_svc  # noqa: E402
 
 
 def test_webhook_calls_dataverse_and_whatsapp(monkeypatch):

@@ -1,4 +1,6 @@
-import requests
+from typing import Any
+
+import requests  # type: ignore
 
 from ..core.config import settings
 from . import mocks
@@ -38,11 +40,10 @@ def get_whatsapp_client() -> WhatsAppClient:
             whatsapp_client = mocks.MockWhatsAppClient()  # type: ignore[assignment]
         return whatsapp_client  # type: ignore[return-value]
 
-    # If we were previously using a mock but now running non-LOCAL, reset to allow real client
+    # If previously using mock but now non-LOCAL, reset so real client can be used
     if isinstance(whatsapp_client, mocks.MockWhatsAppClient):
         whatsapp_client = None
-
-    # If a module-level client (or placeholder) exists, prefer it for compatibility/tests
+    # Prefer module-level client/placeholder for compatibility and tests
     if whatsapp_client is not None:
         return whatsapp_client  # type: ignore[return-value]
 
@@ -57,4 +58,4 @@ class _WhatsAppPlaceholder:
         raise RuntimeError("WhatsApp client not configured")
 
 
-whatsapp_client: WhatsAppClient | _WhatsAppPlaceholder = _WhatsAppPlaceholder()
+whatsapp_client: Any = mocks.MockWhatsAppClient()

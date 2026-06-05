@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
 from datetime import datetime, timezone
+from typing import List, Optional, Tuple
 
 
 class MockDataverseClient:
@@ -43,18 +43,30 @@ class MockDataverseClient:
     def query_messages(self, phone_number: str, group_filter: Optional[str] = None):
         results = [m for m in self._messages if m.get("cr321_phone") == phone_number]
         if group_filter:
-            results = [m for m in results if (m.get("cr321_grupoid") or {}).get("cr321_nombre") == group_filter]
+            results = [
+                m
+                for m in results
+                if (m.get("cr321_grupoid") or {}).get("cr321_nombre") == group_filter
+            ]
         return results
 
-    def query_conversations(self, limit: int = 50, group_filter: Optional[str] = None) -> Tuple[List[dict], List[str]]:
+    def query_conversations(
+        self, limit: int = 50, group_filter: Optional[str] = None
+    ) -> Tuple[List[dict], List[str]]:
         # aggregate by phone
         conversations = {}
         groups = set()
-        for m in sorted(self._messages, key=lambda r: r.get("cr321_timestamp"), reverse=True):
+        for m in sorted(
+            self._messages, key=lambda r: r.get("cr321_timestamp") or "", reverse=True
+        ):
             phone = m.get("cr321_phone")
             group = (m.get("cr321_grupoid") or {}).get("cr321_nombre") or "General"
             groups.add(group)
-            if group_filter and group_filter.upper() != "TODOS" and group != group_filter:
+            if (
+                group_filter
+                and group_filter.upper() != "TODOS"
+                and group != group_filter
+            ):
                 continue
             if phone and phone not in conversations:
                 conversations[phone] = {
@@ -73,7 +85,11 @@ class MockWhatsAppClient:
         self.sent: List[dict] = []
 
     def send_text(self, to: str, body: str):
-        msg = {"to": to, "body": body, "ts": datetime.now(timezone.utc).isoformat()}
+        msg = {
+            "to": to,
+            "body": body,
+            "ts": datetime.now(timezone.utc).isoformat(),
+        }
         self.sent.append(msg)
         print(f"[MOCK_WHATSAPP] send_text to={to} body={body}")
         return {"messages": [{"id": "mock-msg-id"}]}
