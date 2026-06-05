@@ -16,4 +16,18 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 
-settings = Settings()  # type: ignore[call-arg]
+class _LazySettings:
+    """Lazily instantiate Settings on first attribute access to avoid import-time side effects."""
+
+    _instance: Settings | None = None
+
+    def _load(self) -> Settings:
+        if self._instance is None:
+            self._instance = Settings()  # type: ignore[call-arg]
+        return self._instance
+
+    def __getattr__(self, item: str):
+        return getattr(self._load(), item)
+
+
+settings = _LazySettings()
