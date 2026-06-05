@@ -13,11 +13,17 @@ class Settings(BaseSettings):
     verify_token: str = Field(...)
 
     # Use model_config for pydantic v2: ignore extra env inputs and load .env
-    model_config = {"env_file": ".env", "extra": "ignore"}
+    model_config = {
+        "env_file": ".env",
+        "extra": "ignore",
+    }
 
 
 class _LazySettings:
-    """Lazily instantiate Settings on first attribute access to avoid import-time side effects."""
+    """
+    Lazily instantiate `Settings` on first attribute access to avoid
+    import-time side effects.
+    """
 
     _instance: Settings | None = None
 

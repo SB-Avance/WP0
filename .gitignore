@@ -29,3 +29,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Ignore rebuild exported data
+rebuild/data/

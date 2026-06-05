@@ -1,7 +1,7 @@
 from time import time
-from typing import Optional
+from typing import Any, Optional
 
-import requests
+import requests  # type: ignore
 from msal import ConfidentialClientApplication  # type: ignore[import]
 
 from ..core.config import settings
@@ -105,7 +105,10 @@ class DataverseClient:
             )
             url = base + query
 
-        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        }
         resp = requests.get(url, headers=headers, timeout=10)
         resp.raise_for_status()
         return resp.json().get("value", [])
@@ -126,7 +129,10 @@ class DataverseClient:
             # fallback to client-side filtering later
             url += "&$filter=_cr321_grupoid_value eq " + group_filter
 
-        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        }
         resp = requests.get(url, headers=headers, timeout=10)
         resp.raise_for_status()
         data = resp.json()
@@ -155,8 +161,10 @@ class DataverseClient:
         return list(conversations.values()), list(groups)
 
 
-# Backwards-compatible module-level client for tests that patch `dataverse_client`
-dataverse_client: DataverseClient | None = None
+# Backwards-compatible module-level client for tests that patch `dataverse_client`.
+# Initialize to the in-memory mock so tests can monkeypatch methods without
+# requiring Settings to be instantiated at import time.
+dataverse_client: Any = mocks.MockDataverseClient()
 
 
 def get_dataverse_client() -> DataverseClient:
@@ -172,7 +180,8 @@ def get_dataverse_client() -> DataverseClient:
     if isinstance(dataverse_client, mocks.MockDataverseClient):
         dataverse_client = None
 
-    # Prefer module-level `dataverse_client` (test compatibility); otherwise create one lazily
+    # Prefer module-level `dataverse_client` for test compatibility.
+    # Otherwise create a real `DataverseClient` instance lazily.
     if dataverse_client is None:
         dataverse_client = DataverseClient()
     return dataverse_client

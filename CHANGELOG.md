@@ -1,5 +1,14 @@
 # Changelog
 
+All notable changes to this repository will be documented in this file.
+
+## [Unreleased]
+
+- style: fixed flake8/mypy issues and stabilized tests
+- test: initialized mock clients for dataverse and whatsapp to stabilize webhook tests
+- chore: ignored `rebuild/data/` and untracked exported artifacts
+# Changelog
+
 All notable changes to this repository are documented in this file.
 
 ## Unreleased - 2026-06-05
