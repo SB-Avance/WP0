@@ -2,7 +2,7 @@ from time import time
 from typing import Optional
 
 import requests
-from msal import ConfidentialClientApplication
+from msal import ConfidentialClientApplication  # type: ignore[import]
 
 from ..core.config import settings
 
