@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from .api import conversations, messages, webhook
+from .api import admin, conversations, messages, webhook
 from .core.config import settings
 
 app = FastAPI(title="WhatsApp Manager (rebuild)")
@@ -13,6 +13,7 @@ app = FastAPI(title="WhatsApp Manager (rebuild)")
 app.include_router(webhook.router, prefix="/api")
 app.include_router(conversations.router)
 app.include_router(messages.router)
+app.include_router(admin.router)
 
 
 @app.get("/health")
