@@ -1,7 +1,8 @@
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
 import os
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from .api import conversations, messages, webhook
 from .core.config import settings
