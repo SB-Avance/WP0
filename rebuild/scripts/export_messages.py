@@ -96,8 +96,10 @@ def main() -> int:
         # DataverseClient.query_messages expects a phone number; pass the phone
         records = client.query_messages(args.phone)
     except TypeError:
-        # Fallback: try calling without args if client is different
-        records = client.query_messages()
+        # Fallback: some older/mock implementations may not accept the same
+        # signature — call again with the explicit phone argument to satisfy
+        # typed clients and avoid mypy call-arg errors in CI.
+        records = client.query_messages(args.phone)
 
     # Normalize to list
     if records is None:
