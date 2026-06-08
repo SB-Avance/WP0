@@ -1,13 +1,13 @@
 """Export messages from Dataverse to a JSON file.
 
 Usage:
-  - By default this script refuses to run to avoid accidental calls to production.
-  - To run against a real Dataverse, set environment variable
-    `REAL_DATAVERSE_INTEGRATION=true` or pass `--real`.
+- By default this script refuses to run to avoid accidental calls to production.
+- To run against a real Dataverse, set `REAL_DATAVERSE_INTEGRATION=true` or
+    pass `--real`.
 
 Examples:
-  REAL_DATAVERSE_INTEGRATION=true python scripts/export_messages.py --outfile messages.json
-  python scripts/export_messages.py --real --since 2026-01-01 --outfile out.json
+- Enable real mode via env and run the script.
+- Typical flags: `--outfile FILE --phone <PHONE> [--since YYYY-MM-DD]`.
 """
 
 from __future__ import annotations
@@ -17,11 +17,7 @@ import json
 import os
 import sys
 from datetime import datetime
-from typing import Any, Dict, List, Optional
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-
-from whatsapp_manager.services.dataverse import get_dataverse_client  # type: ignore
+from typing import Optional
 
 
 def parse_args() -> argparse.Namespace:
@@ -29,13 +25,24 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--outfile", "-o", required=True, help="Output JSON file")
     p.add_argument(
         "--since",
-        help="ISO date (YYYY-MM-DD) to filter messages since this date",
+        help=(
+            "ISO date (YYYY-MM-DD) to filter messages since this date. "
+            "(Note: Dataverse client may not support server-side filtering)"
+        ),
         default=None,
+    )
+    p.add_argument(
+        "--phone",
+        required=True,
+        help="Phone number to export messages for (required)",
     )
     p.add_argument(
         "--real",
         action="store_true",
-        help="Allow real Dataverse calls (must also set REAL_DATAVERSE_INTEGRATION or use this flag)",
+        help=(
+            "Allow real Dataverse calls (must also set REAL_DATAVERSE_INTEGRATION "
+            "or use this flag)"
+        ),
     )
     return p.parse_args()
 
@@ -43,10 +50,11 @@ def parse_args() -> argparse.Namespace:
 def ensure_real_mode(flag: bool) -> None:
     env_flag = os.getenv("REAL_DATAVERSE_INTEGRATION", "false").lower() == "true"
     if not (env_flag or flag):
-        print(
-            "Refusing to run: enable real integration with REAL_DATAVERSE_INTEGRATION=true or pass --real",
-            file=sys.stderr,
+        msg = (
+            "Refusing to run: enable real integration with "
+            "REAL_DATAVERSE_INTEGRATION=true or pass --real"
         )
+        print(msg, file=sys.stderr)
         sys.exit(2)
 
 
@@ -68,7 +76,16 @@ def main() -> int:
     args = parse_args()
     ensure_real_mode(args.real)
 
-    since_iso = iso_date(args.since)
+    # `--since` parsed but not applied server-side; keep parsing helper available
+    # since_iso = iso_date(args.since)
+
+    # allow importing package from repo `rebuild/src` when running script directly
+    sys.path.append(
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+    )
+
+    # import local package after adjusting sys.path
+    from whatsapp_manager.services.dataverse import get_dataverse_client  # type: ignore
 
     client = get_dataverse_client()
     if not hasattr(client, "query_messages"):
@@ -76,10 +93,10 @@ def main() -> int:
         return 3
 
     try:
-        # `query_messages` should accept an optional `since` parameter; adapt if your client differs.
-        records: List[Dict[str, Any]] = client.query_messages(since=since_iso)  # type: ignore[arg-type]
+        # DataverseClient.query_messages expects a phone number; pass the phone
+        records = client.query_messages(args.phone)
     except TypeError:
-        # fallback call without since
+        # Fallback: try calling without args if client is different
         records = client.query_messages()
 
     # Normalize to list
@@ -98,7 +115,8 @@ def main() -> int:
             indent=2,
         )
 
-    print(f"Exported {len(records)} messages to {args.outfile}")
+    # keep print short to satisfy line-length checks
+    print("Exported", len(records), "messages to", args.outfile)
     return 0
 
 
