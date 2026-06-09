@@ -1,11 +1,19 @@
 # mypy: ignore-errors
 import sys
 
+from msal import ConfidentialClientApplication
+
 # Ensure local src is on path for quick debugging (allowed for this script)
 sys.path.insert(0, "c:/VS/BIN/rebuild/src")
-from msal import ConfidentialClientApplication  # noqa: E402  # type: ignore[import]
 
-from whatsapp_manager.core.config import settings  # noqa: E402
+
+def load_settings():
+    from whatsapp_manager.core.config import settings
+
+    return settings
+
+
+settings = load_settings()
 
 print("Using settings:")
 print("TENANT_ID=", settings.tenant_id)
