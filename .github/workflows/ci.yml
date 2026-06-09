@@ -40,6 +40,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -r rebuild/requirements.txt
           pip install -r requirements-dev.txt
 
       - name: Run pre-commit hooks (format/lint/type)
@@ -49,7 +50,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -q
+          pytest -q rebuild/tests
 
       - name: Run integration tests (real Dataverse)
         if: env.REAL_DATAVERSE_INTEGRATION == 'true'
