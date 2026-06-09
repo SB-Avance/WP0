@@ -1,18 +1,18 @@
 """Export messages from Dataverse to a JSON file.
 
 Usage:
-- By default this script refuses to run to avoid accidental calls to production.
-- To run against a real Dataverse, set `REAL_DATAVERSE_INTEGRATION=true` or
-    pass `--real`.
+- By default this script refuses to run to avoid accidental calls to
+    production. To run against a real Dataverse set
+    `REAL_DATAVERSE_INTEGRATION=true` or pass `--real`.
 
 Examples:
-- Enable real mode via env and run the script.
 - Typical flags: `--outfile FILE --phone <PHONE> [--since YYYY-MM-DD]`.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import os
 import sys
@@ -26,8 +26,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--since",
         help=(
-            "ISO date (YYYY-MM-DD) to filter messages since this date. "
-            "(Note: Dataverse client may not support server-side filtering)"
+            "ISO date (YYYY-MM-DD) to filter messages since this date."
+            " Dataverse client may not support server-side filtering."
         ),
         default=None,
     )
@@ -40,8 +40,8 @@ def parse_args() -> argparse.Namespace:
         "--real",
         action="store_true",
         help=(
-            "Allow real Dataverse calls (must also set REAL_DATAVERSE_INTEGRATION "
-            "or use this flag)"
+            "Allow real Dataverse calls. Also set the environment variable"
+            " REAL_DATAVERSE_INTEGRATION or pass this flag."
         ),
     )
     return p.parse_args()
@@ -76,16 +76,18 @@ def main() -> int:
     args = parse_args()
     ensure_real_mode(args.real)
 
-    # `--since` parsed but not applied server-side; keep parsing helper available
+    # `--since` parsed but not applied server-side; keep parsing helper
+    # available.
     # since_iso = iso_date(args.since)
 
-    # allow importing package from repo `rebuild/src` when running script directly
-    sys.path.append(
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-    )
+    # allow importing package from repo `rebuild/src` when running script
+    base = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+    if base not in sys.path:
+        sys.path.insert(0, base)
 
-    # import local package after adjusting sys.path
-    from whatsapp_manager.services.dataverse import get_dataverse_client  # type: ignore
+    # dynamic import to avoid import-time side-effects and flake8 E402
+    dataverse_mod = importlib.import_module("whatsapp_manager.services.dataverse")
+    get_dataverse_client = getattr(dataverse_mod, "get_dataverse_client")
 
     client = get_dataverse_client()
     if not hasattr(client, "query_messages"):
@@ -93,12 +95,11 @@ def main() -> int:
         return 3
 
     try:
-        # DataverseClient.query_messages expects a phone number; pass the phone
+        # DataverseClient.query_messages expects a phone number; pass the
+        # requested phone.
         records = client.query_messages(args.phone)
     except TypeError:
-        # Fallback: some older/mock implementations may not accept the same
-        # signature — call again with the explicit phone argument to satisfy
-        # typed clients and avoid mypy call-arg errors in CI.
+        # Fallback: call again with explicit phone argument.
         records = client.query_messages(args.phone)
 
     # Normalize to list
