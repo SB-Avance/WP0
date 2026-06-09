@@ -1,17 +1,11 @@
-import importlib
-import os
-import sys
-
 from fastapi.testclient import TestClient
+
+from whatsapp_manager.main import app
+from whatsapp_manager.services import dataverse as dataverse_svc
+from whatsapp_manager.services import whatsapp as whatsapp_svc
 
 
 def test_webhook_calls_dataverse_and_whatsapp(monkeypatch):
-    sys.path.append(
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-    )
-    app = importlib.import_module("whatsapp_manager.main").app
-    dataverse_svc = importlib.import_module("whatsapp_manager.services.dataverse")
-    whatsapp_svc = importlib.import_module("whatsapp_manager.services.whatsapp")
     called = {"dataverse": 0, "whatsapp": 0}
 
     def fake_save_message(*args, **kwargs):
