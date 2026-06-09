@@ -14,12 +14,20 @@ sys.path.insert(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")),
 )
 
-# Provide dummy values for all required Settings fields
-os.environ.setdefault("ENVIRONMENT", "local")
-os.environ.setdefault("DATAVERSE_URL", "http://fake.dataverse.test")
-os.environ.setdefault("TENANT_ID", "fake-tenant-id")
-os.environ.setdefault("CLIENT_ID", "fake-client-id")
-os.environ.setdefault("CLIENT_SECRET", "fake-client-secret")
-os.environ.setdefault("PHONE_NUMBER_ID", "fake-phone-id")
-os.environ.setdefault("WHATSAPP_ACCESS_TOKEN", "fake-access-token")
-os.environ.setdefault("VERIFY_TOKEN", "fake-verify-token")
+# Force dummy values for all required Settings fields.
+# Use "or" fallback so empty CI-injected env vars are replaced too.
+# pydantic-settings maps field names to uppercase env vars:
+#   access_token  → ACCESS_TOKEN  (NOT WHATSAPP_ACCESS_TOKEN)
+_DEFAULTS = {
+    "ENVIRONMENT": "local",
+    "DATAVERSE_URL": "http://fake.dataverse.test",
+    "TENANT_ID": "fake-tenant-id",
+    "CLIENT_ID": "fake-client-id",
+    "CLIENT_SECRET": "fake-client-secret",
+    "PHONE_NUMBER_ID": "fake-phone-id",
+    "ACCESS_TOKEN": "fake-access-token",
+    "VERIFY_TOKEN": "fake-verify-token",
+}
+for _key, _val in _DEFAULTS.items():
+    if not os.environ.get(_key):
+        os.environ[_key] = _val
